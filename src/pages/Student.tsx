@@ -13,6 +13,7 @@ import StudentLinkForm from "@/components/StudentLinkForm";
 import QuestionComments from "@/components/QuestionComments";
 import ChatWindow from "@/components/ChatWindow";
 import { Play, Trophy, Clock, CheckCircle, Pause, RotateCcw, Link, MessageCircle } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface Question {
   id: string;
@@ -117,7 +118,7 @@ const Student = () => {
 
   const loadQuestions = async () => {
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/api/questions');
+      const response = await apiFetch('/api/questions');
       if (response.ok) {
         const data = await response.json();
         

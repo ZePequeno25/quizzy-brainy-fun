@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Upload, FileText } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 const QuestionnaireUpload = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -53,7 +54,7 @@ const QuestionnaireUpload = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('https://aprender-em-movimento.onrender.com/upload_questions_xml', {
+      const response = await apiFetch('/upload_questions_xml', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

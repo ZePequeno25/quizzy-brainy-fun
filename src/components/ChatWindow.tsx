@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageCircle, Send, Minimize2, X, User } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface ChatMessage {
   id: string;
@@ -54,8 +55,8 @@ const ChatWindow = ({ isOpen, onClose, onMinimize, chattingWith }: ChatWindowPro
     if (!user || !chattingWith) return;
 
     try {
-      const response = await fetch(
-        `https://aprender-em-movimento.onrender.com/api/chat/${user.uid}/${chattingWith.id}`
+      const response = await apiFetch(
+        `/api/chat/${user.uid}/${chattingWith.id}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -75,7 +76,7 @@ const ChatWindow = ({ isOpen, onClose, onMinimize, chattingWith }: ChatWindowPro
 
     setLoading(true);
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/api/chat', {
+      const response = await apiFetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

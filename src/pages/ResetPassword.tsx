@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 
 const ResetPassword = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -53,7 +54,7 @@ const ResetPassword = () => {
     setLoading(true);
     
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/reset_password', {
+      const response = await apiFetch('/reset_password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

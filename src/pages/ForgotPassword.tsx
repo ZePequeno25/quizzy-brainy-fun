@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 
 const ForgotPassword = () => {
   const [cpf, setCpf] = useState("");
@@ -45,7 +46,7 @@ const ForgotPassword = () => {
     setLoading(true);
     
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/verify_user_for_password_reset', {
+      const response = await apiFetch('/verify_user_for_password_reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

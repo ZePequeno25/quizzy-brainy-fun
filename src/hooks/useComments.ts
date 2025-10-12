@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 
 interface Comment {
   id: string;
@@ -49,7 +50,7 @@ export const useComments = () => {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const response = await fetch('https://aprender-em-movimento.onrender.com/api/comments', {
+      const response = await apiFetch('/api/comments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +96,7 @@ export const useComments = () => {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const response = await fetch('https://aprender-em-movimento.onrender.com/api/comment-response', {
+      const response = await apiFetch('/api/comment-response', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,10 +139,10 @@ export const useComments = () => {
     
     try {
       const endpoint = user.userType === 'professor' 
-        ? `https://aprender-em-movimento.onrender.com/api/teacher-comments/${user.uid}`
-        : `https://aprender-em-movimento.onrender.com/api/student-comments/${user.uid}`;
-        
-      const response = await fetch(endpoint);
+        ? `/api/teacher-comments/${user.uid}`
+        : `/api/student-comments/${user.uid}`;
+      
+      const response = await apiFetch(endpoint);
       if (response.ok) {
         const data = await response.json();
         setComments(data);

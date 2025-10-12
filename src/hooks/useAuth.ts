@@ -28,6 +28,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "@/lib/api";
 
 interface User {
   uid: string;
@@ -100,7 +101,7 @@ export const useAuth = () => {
     console.log('🔐 [useAuth] Tentando fazer login...', { cpf, userType });
     
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/login', {
+      const response = await apiFetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf, password, userType })
@@ -172,7 +173,7 @@ export const useAuth = () => {
     });
     
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/register', {
+      const response = await apiFetch('/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)

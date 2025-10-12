@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, Save } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface Question {
   id?: string;
@@ -92,12 +93,12 @@ const QuestionForm = ({ question, onSuccess, mode }: QuestionFormProps) => {
       };
 
       const url = mode === 'create' 
-        ? 'https://aprender-em-movimento.onrender.com/api/questions'
-        : `https://aprender-em-movimento.onrender.com/api/questions/${question?.id}`;
+        ? '/api/questions'
+        : `/api/questions/${question?.id}`;
 
       const method = mode === 'create' ? 'POST' : 'PUT';
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',

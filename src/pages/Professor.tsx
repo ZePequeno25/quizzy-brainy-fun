@@ -14,6 +14,7 @@ import QuestionForm from "@/components/QuestionForm";
 import TeacherLinkCode from "@/components/TeacherLinkCode";
 import ChatWindow from "@/components/ChatWindow";
 import { Users, FileText, BarChart3, Plus, Edit, Link, MessageCircle, Eye } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface Student {
   nomeCompleto: string;
@@ -85,7 +86,7 @@ const Professor = () => {
 
   const loadStudents = async () => {
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/get_students_data');
+      const response = await apiFetch('/get_students_data');
       if (response.ok) {
         const data = await response.json();
         setStudents(data);
@@ -103,7 +104,7 @@ const Professor = () => {
 
   const loadQuestions = async () => {
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/api/questions');
+      const response = await apiFetch('/api/questions');
       if (response.ok) {
         const data = await response.json();
         // Filtrar apenas perguntas do professor logado
@@ -316,7 +317,7 @@ const Professor = () => {
 
     try {
       // 3. Fazer requisição PATCH para o backend
-      const response = await fetch('https://aprender-em-movimento.onrender.com/api/questions/visibility', {
+      const response = await apiFetch('/api/questions/visibility', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -364,7 +365,7 @@ const Professor = () => {
     if (!confirm('Tem certeza que deseja excluir esta pergunta?')) return;
 
     try {
-      const response = await fetch('https://aprender-em-movimento.onrender.com/delete_question', {
+      const response = await apiFetch('/delete_question', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
