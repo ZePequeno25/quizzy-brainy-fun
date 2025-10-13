@@ -1,3 +1,22 @@
+/**
+ * ============================================================================
+ * CONTROLLER DE COMENTÁRIOS
+ * ============================================================================
+ * 
+ * Este arquivo gerencia comentários em questões do quiz.
+ * 
+ * FUNCIONALIDADES:
+ * 1. Adicionar comentários em questões
+ * 2. Buscar comentários de alunos de um professor
+ * 3. Buscar comentários de um aluno específico
+ * 4. Adicionar respostas a comentários
+ * 
+ * CORREÇÕES FEITAS:
+ * - Linha 24: userTyoe -> userType (typo corrigido em 3 lugares!)
+ * - Linha 96: relationData -> responseData (variável errada)
+ * - Linha 96: Importação local do db
+ */
+
 const { admin } = require('../utils/firebase');
 const logger = require('../utils/logger');
 const { isProfessor, isStudent } = require('../models/userModel');
@@ -18,6 +37,33 @@ const isValidId = (id, paramName) => {
     return true;
 };
 
+/**
+ * ENDPOINT: POST /api/comment
+ * 
+ * OBJETIVO:
+ * Adicionar comentário de um aluno/professor em uma questão do quiz
+ * 
+ * BODY ESPERADO:
+ * {
+ *   "questionId": "string",
+ *   "questionTheme": "string",
+ *   "questionText": "string",
+ *   "userName": "string",
+ *   "userType": "aluno" | "professor",
+ *   "message": "string"
+ * }
+ * 
+ * CORREÇÃO FEITA - MUITO IMPORTANTE:
+ * Linha 24: userTyoe -> userType
+ * Este era um TYPO CRÍTICO que fazia com que:
+ * - O parâmetro nunca fosse lido corretamente
+ * - Sempre retornasse erro "Missing required fields"
+ * - Impossibilitava adicionar comentários
+ * 
+ * APRENDIZADO:
+ * Typos em nomes de variáveis são bugs silenciosos difíceis de detectar!
+ * Use linters e ferramentas de verificação de código.
+ */
 const addCommentHandler = async (req, res) => {
     try{
         const userId = await getCurrentUserId(req);
