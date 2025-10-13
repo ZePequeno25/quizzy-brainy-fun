@@ -14,7 +14,7 @@ const isValidId = (id, paramName) => {
 };
 
 const getCurrentUserId = async (req) => {
-    const token = req.headers.autorization?.replace('Bearer ', '');
+    const token = req.headers.authorization?.replace('Bearer ', '');
     if(!token) throw new Error('Authentication token unavailable');
     const decodedToken = await admin.auth().verifyIdToken(token);
     return decodedToken.uid;
@@ -24,10 +24,14 @@ const generateTeacherCode = async (req, res) => {
     try{
         const userId = await getCurrentUserId(req);
         if(!await isProfessor(userId)){
-            return res.status(403).json({error: 'Invalid linkCode or teacherId'});
+            return res.status(403).json({error: 'Only professors can generate codes'});
+        }
+        const { teacherId, linkCode } = req.body;
+        if(!teacherId || !linkCode || teacherId !== userId){
+            return res.status(400).json({error: 'Invalid teacherId or linkCode'});
         }
         await createTeacherCode(teacherId, linkCode);
-        logger.info(`Código gerado: ${linkCode} para professor: ${userId}`);//<---ficar de olho
+        logger.info(`Código gerado: ${linkCode} para professor: ${userId}`);
         res.status(200).json({ linkCode, message: 'Teacher code generated successfully' });
     }catch (error){
         logger.error(`Erro ao gerar código: ${error.message}`);
@@ -41,13 +45,9 @@ const getTeacherCodeHandler = async (req, res) =>{
         if(!isValidId(teacherId, 'teacherId')){
             return res.status(400).json({ error: 'Invalid teacherId' });
         }
-        const userId = await getCurrentUserId(req);
-        if(userId !== teacherId || !await isProfessor(userId)){
-            return res.status(403).json({ error: 'Access denied' });
-        }
         const codeData = await getTeacherCode(teacherId);
-        const linkCode = codeData ? codeData.code : `PROF_${userId.slice(0, 8).toUpperCase()}`;
-        res.status(200).json({ linkCode });
+        const code = codeData ? codeData.code : null;
+        res.status(200).json({ code });
 
     }catch (error){
         logger.error(`Erro ao carregar código: ${error.message}`);
@@ -65,11 +65,19 @@ const linkStudentByCode = async (req, res) =>{
         if(!teacherCode || studentId !== userId || !isValidId(studentId, 'studentId')){
             return res.status(400).json({ error: 'Invalid teacherCode or studentId' });
         }
-        const codeData = await useTeacherCode(teacherCode, userId);
-        if(!codeData){
+        
+        const { db } = require('../utils/firebase');
+        const snapshot = await db.collection('teacher_codes')
+            .where('code', '==', teacherCode)
+            .get();
+        
+        if(snapshot.empty){
             return res.status(400).json({ error: 'Invalid or expired code' });
         }
-        const teacherId = codeData.teacher_id;
+        
+        const codeDoc = snapshot.docs[0];
+        const codeData = codeDoc.data();
+        const teacherId = codeData.teacherId;
         const relationId = `${studentId}_${teacherId}`;
         const existing = await db.collection('teacher_students').doc(relationId).get();
         if(existing.exists){
@@ -92,7 +100,7 @@ const getTeacherStudentsHandler = async (req, res) =>{
             return res.status(400).json({ error: 'Invalid teacherId' });
         }
         const relations = await getTeacherStudents(teacherId);
-        res.status(200).json({ relations });
+        res.status(200).json(relations);
 
     }catch (error){
         logger.error(`Erro ao listar alunos: ${error.message}`);
@@ -106,12 +114,8 @@ const getStudentRelationsHandler = async (req, res) => {
         if(!isValidId(studentId, 'studentId')){
             return res.status(400).json({ error: 'Invalid studentId' });
         }
-        const userId = await getCurrentUserId(req);
-        if(userId !== studentId || !await isStudent(userId)){
-            return res.status(403).json({ error: 'Access denied' });
-        }
         const relations = await getStudentRelations(studentId);
-        res.status(200).json({ relations });
+        res.status(200).json(relations);
 
     }catch (error){
         logger.error(`Erro ao listar professores: ${error.message}`);
@@ -126,6 +130,7 @@ const unlinkStudent = async (req, res) => {
             return res.status(400).json({ error: 'Invalid relationId' });
         }
         const userId = await getCurrentUserId(req);
+        const { db } = require('../utils/firebase');
         const relationDoc = await db.collection('teacher_students').doc(relationId).get();
         if(!relationDoc.exists){
             return res.status(404).json({ error: 'Relation not found' });

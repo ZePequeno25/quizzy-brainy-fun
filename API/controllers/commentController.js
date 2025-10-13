@@ -21,11 +21,11 @@ const isValidId = (id, paramName) => {
 const addCommentHandler = async (req, res) => {
     try{
         const userId = await getCurrentUserId(req);
-        const {questionId, questionTheme, questionText, userName, userTyoe, message} = req.body;
-        if(!questionId || !questionTheme || !questionText || !userName || !userTyoe || !message){ //<-- Possivel problema
+        const {questionId, questionTheme, questionText, userName, userType, message} = req.body;
+        if(!questionId || !questionTheme || !questionText || !userName || !userType || !message){
             return res.status(400).json({error: 'Missing required fields'});
         }
-        if(!['aluno', 'professor'].includes(userTyoe)){
+        if(!['aluno', 'professor'].includes(userType)){
             return res.status(400).json({error: 'Invalid userType'});
         }
         const commentData = {
@@ -34,7 +34,7 @@ const addCommentHandler = async (req, res) => {
             question_text: questionText,
             user_id: userId,
             user_name: userName,
-            user_type: userTyoe,
+            user_type: userType,
             message
         };
         const commentId = await addComment(commentData);
@@ -93,11 +93,12 @@ const addCommentResponseHandler = async (req, res) => {
         if(!['aluno', 'professor'].includes(userType)){
             return res.status(400).json({error: 'Invalid userType'});
         }
+        const { db } = require('../utils/firebase');
         const commentDoc = await db.collection('comments').doc(commentId).get();
         if(!commentDoc.exists){
             return res.status(404).json({error: 'Comment not found'});
         }
-        const relationData = {
+        const responseData = {
             comment_id: commentId,
             user_id: userId,
             user_name: userName,

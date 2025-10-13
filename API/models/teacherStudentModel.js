@@ -29,7 +29,10 @@ const getTeacherStudents = async (teacherId) => {
             .get();
         return snapshot.docs.map(doc => ({
             relationId: doc.id,
-            ...doc.data(),
+            teacherId: doc.data().teacher_id,
+            studentId: doc.data().student_id,
+            teacherName: doc.data().teacher_name,
+            studentName: doc.data().student_name,
             createdAt: doc.data().joined_at ? doc.data().joined_at.toDate().toISOString(): null
         }));
         
@@ -46,7 +49,10 @@ const getStudentRelations = async (studentId) => {
             .get();
         return snapshot.docs.map(doc => ({
             relationId: doc.id,
-            ...doc.data(),
+            teacherId: doc.data().teacher_id,
+            studentId: doc.data().student_id,
+            teacherName: doc.data().teacher_name,
+            studentName: doc.data().student_name,
             createdAt: doc.data().joined_at ? doc.data().joined_at.toDate().toISOString(): null
         }));
 

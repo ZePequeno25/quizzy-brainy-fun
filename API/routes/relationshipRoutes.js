@@ -12,6 +12,7 @@ router.get('/teacher-code/:teacherId', getTeacherCodeHandler);
 router.post('/link-student', linkStudentByCode);
 router.get('/teacher-students/:teacherId', getTeacherStudentsHandler);
 router.get('/teacher-relations/:studentId', getStudentRelationsHandler);
+router.get('/student-relations/:studentId', getStudentRelationsHandler);
 router.delete('/unlink-student/:relationId', unlinkStudent);
 
 module.exports = router;
