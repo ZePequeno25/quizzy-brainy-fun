@@ -1,4 +1,4 @@
-const API_URL = 'https://aprender-em-movimento-js.onrender.com';
+const API_URL = 'https://aprender-em-movimento-js.onrender.com/api';
 
 /**
  * Faz uma requisição para a API
