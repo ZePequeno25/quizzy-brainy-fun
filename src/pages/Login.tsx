@@ -17,7 +17,7 @@
  * - Link para recuperação → /forgot-password
  * 
  * ENDPOINT BACKEND:
- * POST https://aprender-em-movimento.onrender.com/login
+ * POST https://aprender-em-movimento.onrender.com/api/login
  * Body: { cpf: string, password: string, userType: 'aluno' | 'professor' }
  */
 

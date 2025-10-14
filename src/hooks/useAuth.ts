@@ -47,9 +47,17 @@ export const useAuth = () => {
   const navigate = useNavigate();
 
   /**
+   * FUNÇÃO: Limpar formatação do CPF
+   * Remove pontos e hífen do CPF, retornando apenas dígitos
+   * @param cpf - CPF com ou sem formatação
+   * @returns CPF com apenas dígitos
+   */
+  const cleanCpf = (cpf: string): string => {
+    return cpf.replace(/[\.\-]/g, '');
+  };
+
+  /**
    * EFEITO: Inicialização - Verificar sessão existente
-   * Carrega dados do usuário do localStorage ao montar o hook
-   * Executado apenas uma vez na inicialização
    */
   useEffect(() => {
     console.log('🔐 [useAuth] Inicializando hook de autenticação...');
@@ -68,6 +76,7 @@ export const useAuth = () => {
       } catch (error) {
         console.error('❌ [useAuth] Erro ao carregar usuário salvo:', error);
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('userEmail');
       }
     } else {
       console.log('ℹ️ [useAuth] Nenhuma sessão existente encontrada');
@@ -75,30 +84,54 @@ export const useAuth = () => {
     setLoading(false);
   }, []);
 
-  /**
+ /**
    * FUNÇÃO: Login de usuário
    * 
    * PARÂMETROS:
-   * @param cpf - CPF sem formatação (apenas números)
+   * @param cpf - CPF sem formatação (apenas números, 11 dígitos)
    * @param password - Senha do usuário
    * @param userType - Tipo de usuário ('aluno' | 'professor')
    * 
    * FLUXO:
-   * 1. Envia requisição POST para backend /login
-   * 2. Se sucesso:
-   *    - Salva dados do usuário no localStorage
+   * 1. Valida CPF (11 dígitos)
+   * 2. Envia requisição POST para /api/login com { cpf, password, userType }
+   * 3. Se sucesso:
+   *    - Salva dados do usuário e email no localStorage
    *    - Salva token JWT no localStorage
    *    - Atualiza estado local com dados do usuário
+   *    - Redireciona para /student ou /professor
    *    - Exibe toast de sucesso
-   * 3. Se erro:
+   * 4. Se erro:
    *    - Exibe toast com mensagem de erro
    *    - Retorna objeto com success: false
    * 
    * RETORNO:
    * { success: boolean, error?: string }
    */
+
   const login = async (cpf: string, password: string, userType: 'aluno' | 'professor') => {
     console.log('🔐 [useAuth] Tentando fazer login...', { cpf, userType });
+
+    const cleanedCpf = cleanCpf(cpf);
+    if (!cleanedCpf || !/^\d{11}$/.test(cleanedCpf)) {
+      console.error('❌ [useAuth] CPF inválido:', cpf);
+      toast({
+        title: "Erro no login",
+        description: "O CPF deve conter 11 dígitos numéricos (ex.: 12345678901).",
+        variant: "destructive",
+      });
+      return { success: false, error: 'Invalid CPF format' };
+    }
+
+    if(!password || !userType) {
+      console.error('❌ [useAuth] Campos obrigatórios faltando:', { password: !!password, userType: !!userType });
+      toast({
+        title: "Erro no login",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return { success: false, error: 'Missing password or userType' };
+    }
     
     try {
       const response = await apiFetch('/login', {
@@ -126,7 +159,13 @@ export const useAuth = () => {
       }
 
       const data = await response.json();
-      const userData = data.user;
+      const userData = {
+        uid: data.userId,
+        email: data.email || localStorage.getItem('userEmail'),
+        nomeCompleto: data.nomeCompleto,
+        userType: data.userType,
+        cpf
+      };
       
       console.log('✅ [useAuth] Login bem-sucedido!', {
         uid: userData.uid,
@@ -137,6 +176,7 @@ export const useAuth = () => {
       // Salvar no localStorage
       localStorage.setItem('currentUser', JSON.stringify(userData));
       localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userEmail', userData.email);
       console.log('💾 [useAuth] Dados salvos no localStorage');
       
       setUser(userData);
@@ -146,6 +186,7 @@ export const useAuth = () => {
         description: `Bem-vindo, ${userData.nomeCompleto}`,
       });
 
+      navigate(userType === 'aluno' ? '/student' : '/professor');
       return { success: true };
     } catch (error: any) {
       console.error('❌ [useAuth] Erro no login:', error.message);
@@ -176,11 +217,28 @@ export const useAuth = () => {
    * RETORNO:
    * { success: boolean, error?: string }
    */
-  const register = async (userData: any) => {
+  const register = async (userData: {
+    userType: 'aluno' | 'professor';
+    nomeCompleto: string;
+    cpf: string;
+    genero: string;
+    dataNascimento: string;
+  }) => {
     console.log('📝 [useAuth] Tentando registrar novo usuário...', {
       tipo: userData.userType,
       nome: userData.nomeCompleto
     });
+    
+    const cleanedCpf = cleanCpf(userData.cpf);
+    if (!cleanedCpf || !/^\d{11}$/.test(cleanedCpf)) {
+      console.error('❌ [useAuth] CPF inválido:', userData.cpf);
+      toast({
+        title: "Erro no cadastro",
+        description: "O CPF deve conter 11 dígitos numéricos (ex.: 12345678901).",
+        variant: "destructive",
+      });
+      return { success: false, error: 'Invalid CPF format' };
+    }
     
     try {
       const response = await apiFetch('/register', {
@@ -196,7 +254,7 @@ export const useAuth = () => {
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
         console.error('❌ [useAuth] API retornou HTML ao invés de JSON:', text.substring(0, 200));
-        throw new Error('Erro de comunicação com o servidor. A API não está respondendo corretamente.');
+        throw new Error('Erro de comunicação com o servidor. A API não está respondindo corretamente.');
       }
 
       const data = await response.json();
@@ -207,10 +265,13 @@ export const useAuth = () => {
         throw new Error(data.error || 'Erro no cadastro');
       }
 
+      localStorage.setItem('userEmail', data.email);
+      console.log('💾 [useAuth] Email salvo no localStorage:', data.email);
+      
       console.log('✅ [useAuth] Cadastro realizado com sucesso!');
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: "Agora você pode fazer login",
+        description: `Email gerado: ${data.email}. Agora você pode fazer login.`,
       });
 
       return { success: true };
@@ -247,10 +308,9 @@ export const useAuth = () => {
     
     localStorage.removeItem('currentUser');
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userEmail');
     console.log('🗑️ [useAuth] Dados de autenticação removidos');
     
-    // Limpar todos os estados persistidos
-    console.log('🧹 [useAuth] Limpando todos os estados persistidos...');
     let removedKeys = 0;
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('questions_') || key.startsWith('quizQuestions_') || key.startsWith('isChatOpen_') || key.startsWith('chattingWith_') || key.startsWith('students_') || key.startsWith('relations_') || key.startsWith('teacherCode_') || key.startsWith('comments_') || key.startsWith('editingQuestion_') || key.startsWith('chatMessages_') || key.startsWith('newComment_') || key.startsWith('responseText_') || key.startsWith('respondingTo_') || key.startsWith('quizState_')) {
