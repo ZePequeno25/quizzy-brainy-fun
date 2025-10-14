@@ -123,34 +123,12 @@ export const useAuth = () => {
       return { success: false, error: 'Invalid CPF format' };
     }
 
-    if(!password || !userType) {
-      console.error('❌ [useAuth] Campos obrigatórios faltando:', { password: !!password, userType: !!userType });
-      toast({
-        title: "Erro no login",
-        description: "Por favor, preencha todos os campos.",
-        variant: "destructive",
-      });
-      return { success: false, error: 'Missing password or userType' };
-    }
-    
     try {
       const response = await apiFetch('/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cpf, password, userType })
       });
-
-      console.log('📡 [useAuth] Resposta do servidor:', response.status);
-      
-      // Verificar se a resposta é JSON
-      const contentType = response.headers.get('content-type');
-      console.log('📋 [useAuth] Content-Type da resposta:', contentType);
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('❌ [useAuth] API retornou HTML ao invés de JSON:', text.substring(0, 200));
-        throw new Error('Erro de comunicação com o servidor. A API não está respondendo corretamente.');
-      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -161,26 +139,23 @@ export const useAuth = () => {
       const data = await response.json();
       const userData = {
         uid: data.userId,
-        email: data.email || localStorage.getItem('userEmail'),
+        email: data.email,
         nomeCompleto: data.nomeCompleto,
         userType: data.userType,
-        cpf
+        cpf: cleanedCpf,
       };
-      
+
       console.log('✅ [useAuth] Login bem-sucedido!', {
         uid: userData.uid,
         nome: userData.nomeCompleto,
-        tipo: userData.userType
+        tipo: userData.userType,
       });
-      
-      // Salvar no localStorage
+
       localStorage.setItem('currentUser', JSON.stringify(userData));
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('userEmail', userData.email);
-      console.log('💾 [useAuth] Dados salvos no localStorage');
       
       setUser(userData);
-      
       toast({
         title: "Login realizado com sucesso!",
         description: `Bem-vindo, ${userData.nomeCompleto}`,
@@ -188,6 +163,7 @@ export const useAuth = () => {
 
       navigate(userType === 'aluno' ? '/student' : '/professor');
       return { success: true };
+
     } catch (error: any) {
       console.error('❌ [useAuth] Erro no login:', error.message);
       toast({
@@ -247,27 +223,13 @@ export const useAuth = () => {
         body: JSON.stringify(userData)
       });
 
-      // Verificar se a resposta é JSON
-      const contentType = response.headers.get('content-type');
-      console.log('📋 [useAuth] Content-Type da resposta:', contentType);
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('❌ [useAuth] API retornou HTML ao invés de JSON:', text.substring(0, 200));
-        throw new Error('Erro de comunicação com o servidor. A API não está respondindo corretamente.');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ [useAuth] Erro no cadastro:', errorData);
+        throw new Error(errorData.error || 'Erro no cadastro');
       }
 
       const data = await response.json();
-      console.log('📡 [useAuth] Resposta do servidor:', response.status);
-      
-      if (!response.ok) {
-        console.error('❌ [useAuth] Erro no cadastro:', data.error);
-        throw new Error(data.error || 'Erro no cadastro');
-      }
-
-      localStorage.setItem('userEmail', data.email);
-      console.log('💾 [useAuth] Email salvo no localStorage:', data.email);
-      
       console.log('✅ [useAuth] Cadastro realizado com sucesso!');
       toast({
         title: "Cadastro realizado com sucesso!",
@@ -275,6 +237,7 @@ export const useAuth = () => {
       });
 
       return { success: true };
+
     } catch (error: any) {
       console.error('❌ [useAuth] Erro no cadastro:', error.message);
       toast({
@@ -348,11 +311,9 @@ export const useAuth = () => {
   };
 
   return {
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    getAuthToken
+    user, 
+    loading, 
+    login, 
+    register
   };
 };
