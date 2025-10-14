@@ -108,6 +108,16 @@ export const useAuth = () => {
       });
 
       console.log('📡 [useAuth] Resposta do servidor:', response.status);
+      
+      // Verificar se a resposta é JSON
+      const contentType = response.headers.get('content-type');
+      console.log('📋 [useAuth] Content-Type da resposta:', contentType);
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ [useAuth] API retornou HTML ao invés de JSON:', text.substring(0, 200));
+        throw new Error('Erro de comunicação com o servidor. A API não está respondendo corretamente.');
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -178,6 +188,16 @@ export const useAuth = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
       });
+
+      // Verificar se a resposta é JSON
+      const contentType = response.headers.get('content-type');
+      console.log('📋 [useAuth] Content-Type da resposta:', contentType);
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ [useAuth] API retornou HTML ao invés de JSON:', text.substring(0, 200));
+        throw new Error('Erro de comunicação com o servidor. A API não está respondendo corretamente.');
+      }
 
       const data = await response.json();
       console.log('📡 [useAuth] Resposta do servidor:', response.status);
