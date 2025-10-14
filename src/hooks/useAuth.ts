@@ -164,7 +164,7 @@ export const useAuth = () => {
       navigate(userType === 'aluno' ? '/student' : '/professor');
       return { success: true };
 
-    } catch (error: any) {
+    }  catch (error: any) {
       console.error('❌ [useAuth] Erro no login:', error.message);
       toast({
         title: "Erro no login",
