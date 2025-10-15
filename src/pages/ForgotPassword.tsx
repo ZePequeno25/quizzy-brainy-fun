@@ -53,11 +53,7 @@ const ForgotPassword = () => {
         userType
       });
 
-      // ✅ TESTE: Verifique a URL completa
-      const apiUrl = '/verify_user_for_password_reset';
-      console.log('🌐 [ForgotPassword] Chamando API:', apiUrl);
-
-      const response = await apiFetch(apiUrl, {
+      const response = await apiFetch('/verify-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -75,24 +71,24 @@ const ForgotPassword = () => {
       const data = await response.json();
       console.log('📊 [ForgotPassword] Dados da resposta:', data);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.log('❌ [ForgotPassword] Erro na resposta:', errorData);
-        throw new Error(errorData.error || "Erro na verificação");
-      }
-
-      // ✅ O backend deve retornar userId se encontrou o usuário
+      // ✅✅✅ CORREÇÃO AQUI: Verificar se existe userId (não data.success)
       if (data.userId) {
-        console.log('✅ [ForgotPassword] Usuário verificado:', data.userId);
+        console.log('✅ [ForgotPassword] Usuário verificado com sucesso:', data.userId);
         toast({
           title: "Sucesso",
           description: data.message || "Usuário verificado com sucesso"
         });
+        // ✅ Navegar para reset-password com o userId
         navigate(`/reset-password?userId=${encodeURIComponent(data.userId)}`);
       } else {
-        console.log('❌ [ForgotPassword] userId não encontrado na resposta');
-        throw new Error(data.error || "CPF não encontrado");
+        console.log('❌ [ForgotPassword] Usuário não encontrado - resposta:', data);
+        toast({
+          title: "Erro",
+          description: data.error || "CPF não encontrado",
+          variant: "destructive"
+        });
       }
+
     } catch (error: any) {
       console.error('💥 [ForgotPassword] Erro capturado:', error);
       toast({
