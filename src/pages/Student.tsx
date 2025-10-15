@@ -118,7 +118,7 @@ const Student = () => {
 
   const loadQuestions = async () => {
     try {
-      const response = await apiFetch('/api/questions');
+      const response = await apiFetch('/questions');
       if (response.ok) {
         const data = await response.json();
         
