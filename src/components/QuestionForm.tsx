@@ -30,13 +30,14 @@ interface QuestionFormProps {
 }
 
 const QuestionForm = ({ question, onSuccess, mode }: QuestionFormProps) => {
-  const [theme, setTheme] = useState(question?.theme || '');
-  const [questionText, setQuestionText] = useState(question?.question || '');
-  const [options, setOptions] = useState(question?.options || ['', '']);
-  const [correctOptionIndex, setCorrectOptionIndex] = useState(question?.correctOptionIndex || 0);
-  const [feedbackTitle, setFeedbackTitle] = useState(question?.feedback.title || '');
-  const [feedbackText, setFeedbackText] = useState(question?.feedback.text || '');
-  const [feedbackIllustration, setFeedbackIllustration] = useState(question?.feedback.illustration || '');
+  const [theme, setTheme] = useState(question?.theme ?? '');
+  const [questionText, setQuestionText] = useState(question?.question ?? '');
+  const initialOptions: string[] = Array.isArray(question?.options) ? (question!.options as string[]) : ['', ''];
+  const [options, setOptions] = useState<string[]>(initialOptions);
+  const [correctOptionIndex, setCorrectOptionIndex] = useState<number>(Number.isInteger(question?.correctOptionIndex) ? (question!.correctOptionIndex as number) : 0);
+  const [feedbackTitle, setFeedbackTitle] = useState(question?.feedback?.title ?? '');
+  const [feedbackText, setFeedbackText] = useState(question?.feedback?.text ?? '');
+  const [feedbackIllustration, setFeedbackIllustration] = useState(question?.feedback?.illustration ?? '');
   const [loading, setLoading] = useState(false);
 
   const { getAuthToken, user } = useAuth();
@@ -185,7 +186,7 @@ const QuestionForm = ({ question, onSuccess, mode }: QuestionFormProps) => {
               </Button>
             </div>
             
-            {options.map((option, index) => (
+            {(Array.isArray(options) ? options : []).map((option, index) => (
               <div key={index} className="flex gap-2 items-center">
                 <Input
                   value={option}
@@ -193,7 +194,7 @@ const QuestionForm = ({ question, onSuccess, mode }: QuestionFormProps) => {
                   placeholder={`Opção ${index + 1}`}
                   required
                 />
-                {options.length > 2 && (
+                {(Array.isArray(options) ? options : []).length > 2 && (
                   <Button
                     type="button"
                     onClick={() => removeOption(index)}
@@ -214,7 +215,7 @@ const QuestionForm = ({ question, onSuccess, mode }: QuestionFormProps) => {
                 <SelectValue placeholder="Selecione a resposta correta" />
               </SelectTrigger>
               <SelectContent>
-                {options.map((option, index) => (
+                {(Array.isArray(options) ? options : []).map((option, index) => (
                   <SelectItem key={index} value={index.toString()}>
                     Opção {index + 1}: {option.substring(0, 30)}{option.length > 30 ? '...' : ''}
                   </SelectItem>
