@@ -335,6 +335,7 @@ export const useAuth = () => {
     loading, 
     login, 
     register,
-    logout
+    logout,
+    getAuthToken
   };
 };
