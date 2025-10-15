@@ -16,11 +16,11 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const cpf = searchParams.get('cpf');
-  const userType = searchParams.get('userType');
+  // ✅ CORREÇÃO: Usar userId em vez de cpf/userType
+  const userId = searchParams.get('userId');
 
   useEffect(() => {
-    if (!cpf || !userType) {
+    if (!userId) {
       toast({
         title: "Erro",
         description: "Dados inválidos. Redirecionando...",
@@ -28,11 +28,13 @@ const ResetPassword = () => {
       });
       navigate('/forgot-password');
     }
-  }, [cpf, userType, navigate, toast]);
+  }, [userId, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔐 [ResetPassword] Iniciando reset...', { userId });
+
     if (newPassword !== confirmPassword) {
       toast({
         title: "Erro",
@@ -54,35 +56,41 @@ const ResetPassword = () => {
     setLoading(true);
     
     try {
-      const response = await apiFetch('/reset_password', {
+      console.log('🌐 [ResetPassword] Chamando API...');
+      
+      const response = await apiFetch('/reset-password', { // ou /reset_password
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          cpf, 
-          userType, 
+          userId, // ✅ CORREÇÃO: Enviar userId em vez de cpf/userType
           newPassword 
         })
       });
 
-      const data = await response.json();
+      console.log('📨 [ResetPassword] Resposta:', {
+        status: response.status,
+        ok: response.ok
+      });
 
-      if (data.success) {
+      const data = await response.json();
+      console.log('📊 [ResetPassword] Dados:', data);
+
+      // ✅ CORREÇÃO: Backend retorna { message } não { success }
+      if (response.ok) {
         toast({
           title: "Sucesso",
-          description: data.message
+          description: data.message || "Senha alterada com sucesso!"
         });
         navigate('/login');
       } else {
-        toast({
-          title: "Erro",
-          description: data.error || "Erro ao alterar senha",
-          variant: "destructive"
-        });
+        throw new Error(data.error || "Erro ao alterar senha");
       }
-    } catch (error) {
+
+    } catch (error: any) {
+      console.error('💥 [ResetPassword] Erro:', error);
       toast({
         title: "Erro",
-        description: "Erro ao alterar senha. Tente novamente.",
+        description: error.message || "Erro ao alterar senha. Tente novamente.",
         variant: "destructive"
       });
     }
@@ -90,7 +98,7 @@ const ResetPassword = () => {
     setLoading(false);
   };
 
-  if (!cpf || !userType) {
+  if (!userId) {
     return null;
   }
 
