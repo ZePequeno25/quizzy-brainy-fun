@@ -29,7 +29,7 @@ app.use('/api', chatRoutes);          // Chat entre usuários
 
 **Endpoint:**
 ```
-PATCH /api/questions/visibility
+PATCH /questions/visibility
 ```
 
 **Headers necessários:**
