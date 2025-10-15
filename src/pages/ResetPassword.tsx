@@ -58,7 +58,7 @@ const ResetPassword = () => {
     try {
       console.log('🌐 [ResetPassword] Chamando API...');
       
-      const response = await apiFetch('/reset-password', { // ou /reset_password
+      const response = await apiFetch('/reset_password', { // ou /reset_password
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

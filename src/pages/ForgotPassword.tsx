@@ -53,7 +53,7 @@ const ForgotPassword = () => {
         userType
       });
 
-      const response = await apiFetch('/verify-user', {
+      const response = await apiFetch('/verify_user_for_password_reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
