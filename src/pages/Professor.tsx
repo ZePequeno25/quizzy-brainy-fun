@@ -86,7 +86,7 @@ const Professor = () => {
 
   const loadStudents = async () => {
     try {
-      const response = await apiFetch('/get_students_data');
+      const response = await apiFetch('/students_data');
       if (response.ok) {
         const data = await response.json();
         // Validação defensiva: garantir que data é um array
