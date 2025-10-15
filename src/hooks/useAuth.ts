@@ -267,32 +267,52 @@ export const useAuth = () => {
    * 6. Redireciona para página inicial (/)
    */
   const logout = () => {
-    console.log('🚪 [useAuth] Realizando logout...');
-    
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userEmail');
-    console.log('🗑️ [useAuth] Dados de autenticação removidos');
-    
-    let removedKeys = 0;
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('questions_') || key.startsWith('quizQuestions_') || key.startsWith('isChatOpen_') || key.startsWith('chattingWith_') || key.startsWith('students_') || key.startsWith('relations_') || key.startsWith('teacherCode_') || key.startsWith('comments_') || key.startsWith('editingQuestion_') || key.startsWith('chatMessages_') || key.startsWith('newComment_') || key.startsWith('responseText_') || key.startsWith('respondingTo_') || key.startsWith('quizState_')) {
-        localStorage.removeItem(key);
-        removedKeys++;
-      }
-    });
-    console.log(`✅ [useAuth] ${removedKeys} chaves removidas do localStorage`);
-    
-    setUser(null);
-    
-    toast({
-      title: "Logout realizado",
-      description: "Até logo!",
-    });
-    
-    console.log('🔀 [useAuth] Redirecionando para página inicial...');
-    navigate('/');
-  };
+  console.log('🚪 [useAuth] Iniciando logout...');
+  console.log('📊 [useAuth] Estado atual - user:', user);
+  console.log('📦 [useAuth] localStorage antes da limpeza:');
+  Object.keys(localStorage).forEach(key => {
+    console.log(`   ${key}: ${localStorage.getItem(key)?.substring(0, 50)}...`);
+  });
+
+  // Remove dados de autenticação
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('userEmail');
+  console.log('🗑️ [useAuth] Dados de autenticação removidos');
+
+  // Limpeza de dados da aplicação
+  let removedKeys = 0;
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('questions_') || key.startsWith('quizQuestions_') || 
+        key.startsWith('isChatOpen_') || key.startsWith('chattingWith_') || 
+        key.startsWith('students_') || key.startsWith('relations_') || 
+        key.startsWith('teacherCode_') || key.startsWith('comments_') || 
+        key.startsWith('editingQuestion_') || key.startsWith('chatMessages_') || 
+        key.startsWith('newComment_') || key.startsWith('responseText_') || 
+        key.startsWith('respondingTo_') || key.startsWith('quizState_')) {
+      localStorage.removeItem(key);
+      removedKeys++;
+      console.log(`   🗑️ Removido: ${key}`);
+    }
+  });
+  console.log(`✅ [useAuth] ${removedKeys} chaves removidas do localStorage`);
+
+  // Atualiza estado
+  setUser(null);
+  console.log('🔄 [useAuth] Estado user atualizado para:', null);
+
+  // Toast
+  toast({
+    title: "Logout realizado",
+    description: "Até logo!",
+  });
+  console.log('📢 [useAuth] Toast de logout exibido');
+
+  // Redireciona
+  console.log('🔀 [useAuth] Redirecionando para página inicial...');
+  navigate('/');
+  console.log('🎯 [useAuth] Logout completo!');
+};
 
   /**
    * FUNÇÃO: Obter token JWT de autenticação
@@ -314,6 +334,7 @@ export const useAuth = () => {
     user, 
     loading, 
     login, 
-    register
+    register,
+    logout
   };
 };
