@@ -104,7 +104,7 @@ const Professor = () => {
 
   const loadQuestions = async () => {
     try {
-      const response = await apiFetch('/api/questions');
+      const response = await apiFetch('/questions');
       if (response.ok) {
         const data = await response.json();
         // Filtrar apenas perguntas do professor logado
@@ -317,7 +317,7 @@ const Professor = () => {
 
     try {
       // 3. Fazer requisição PATCH para o backend
-      const response = await apiFetch('/api/questions/visibility', {
+      const response = await apiFetch('/questions/visibility', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
