@@ -1,66 +1,40 @@
-const Admin = require('firebase-admin');
-const logger = require('../utils/logger');
-const dotenv = require('dotenv');
-const path = require('path');
-const fs = require('fs');
+const admin = require('firebase-admin');
+const logger = require('./logger');
 
-dotenv.config();
+let adminApp, db;
 
-let initialized = false;
-let dbInstance;
-let adminInstance;
+try {
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    logger.error('Variável de ambiente FIREBASE_SERVICE_ACCOUNT não definida', 'FIREBASE');
+    throw new Error('FIREBASE_SERVICE_ACCOUNT não definida');
+  }
 
-const initializeFirebase = () => {
-    if(initialized)return;
-    
-    try{
-        let serviceAccount;
-        const serviceAccountPath = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    logger.debug('FIREBASE_SERVICE_ACCOUNT parseado com sucesso', 'FIREBASE', { project_id: serviceAccount.project_id });
+  } catch (error) {
+    logger.error('Erro ao parsear FIREBASE_SERVICE_ACCOUNT', 'FIREBASE', { error: error.message });
+    throw error;
+  }
 
-        if(!serviceAccountPath){
-            throw new Error('FIREBASE_SERVICE_ACCOUNT não está definido nas variáveis de ambiente.');
-        }
-        // Tentar parsear como JSON primeiro
-        try{
-            serviceAccount = require(serviceAccountPath);
-            logger.info('Credenciais Firebase carregadas como JSON');
-        }catch(jsonError){
-            // Se não for JSON, tratar como caminho de arquivo
-            if(!fs.existsSync(serviceAccountPath)){
-                throw new Error(`Arquivo de conta de serviço não encontrado em: ${serviceAccountPath}`);
-            }
+  // Verifica se já foi inicializado
+  if (admin.apps.length === 0) {
+    adminApp = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    logger.info('Firebase inicializado com sucesso', 'FIREBASE');
+  } else {
+    adminApp = admin.app();
+    logger.info('Firebase já estava inicializado, usando instância existente', 'FIREBASE');
+  }
 
-            serviceAccount = require(path.resolve(serviceAccountPath));
-            logger.info(`Caminho do serviço Firebase: ${serviceAccountPath}`);
-        }
+  db = adminApp.firestore();
+  logger.debug('Firestore instance inicializada', 'FIREBASE', { dbInitialized: !!db });
 
-        //verificar campos obrigatorios
-        const requiredFields = ['project_id', 'private_key_id', 'private_key', 'client_email'];
-        const missingFields = requiredFields.filter(field => !serviceAccount[field]);
-        if(missingFields.length > 0){
-            throw new Error(`Arquivo de credenciais inválido: faltam os campos: ${missingFields.join(', ')}`);
-        }
-        adminInstance = Admin.initializeApp({
-            credential: Admin.credential.cert(serviceAccount)
-        });
-        dbInstance = Admin.firestore();
-        initialized = true;
-        logger.info('Firebase inicializado com sucesso.');
-
-    }catch (error){
-        logger.error(`Erro ao inicializar Firebase: ${error.message}`);
-        throw error;
-    }     
-};
-
-const db = () => {
-    if(!initialized) initializeFirebase();
-    return dbInstance;
-};
-
-const admin = () => {
-    if(!initialized) initializeFirebase();
-    return adminInstance;
-};
+} catch (error) {
+  logger.error(`Erro ao inicializar Firebase: ${error.message}`, 'FIREBASE', { stack: error.stack });
+  throw error;
+}
 
 module.exports = { admin, db };

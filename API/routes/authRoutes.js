@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, verifyUserForPasswordResetHandler, resetPassword, verifyUser } = require('../controllers/authController');
+const authController = require('../controllers/authController');
 
-router.post('/register', register);
-router.post('/login', login);
-router.post('/forgotpassword', verifyUserForPasswordResetHandler);
-router.post('/resetpassword', resetPassword);
-router.get('/verifyuser', verifyUser);
+//rota funcionando com sucesso
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.post('/verify_user_for_password_reset', authController.verifyUserForPasswordResetHandler);
+router.post('/reset_password', authController.resetPassword);
 
 module.exports = router;
