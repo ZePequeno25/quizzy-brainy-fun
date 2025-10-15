@@ -33,7 +33,7 @@ const ForgotPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     if (!userType) {
       toast({
         title: "Erro",
@@ -44,40 +44,64 @@ const ForgotPassword = () => {
     }
 
     setLoading(true);
-    
+  
     try {
-      const response = await apiFetch('/verify_user_for_password_reset', {
+      const cleanedCpf = cpf.replace(/\D/g, '');
+    
+      console.log('🔍 [ForgotPassword] Enviando para verificação:', {
+        cpf: cleanedCpf,
+        userType
+      });
+
+      // ✅ TESTE: Verifique a URL completa
+      const apiUrl = '/verify_user_for_password_reset';
+      console.log('🌐 [ForgotPassword] Chamando API:', apiUrl);
+
+      const response = await apiFetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          cpf: cpf.replace(/\D/g, ''), 
+          cpf: cleanedCpf, 
           userType 
         })
       });
 
-      const data = await response.json();
+      console.log('📨 [ForgotPassword] Resposta recebida:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
 
-      if (data.success) {
+      const data = await response.json();
+      console.log('📊 [ForgotPassword] Dados da resposta:', data);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log('❌ [ForgotPassword] Erro na resposta:', errorData);
+        throw new Error(errorData.error || "Erro na verificação");
+      }
+
+      // ✅ O backend deve retornar userId se encontrou o usuário
+      if (data.userId) {
+        console.log('✅ [ForgotPassword] Usuário verificado:', data.userId);
         toast({
           title: "Sucesso",
-          description: data.message
+          description: data.message || "Usuário verificado com sucesso"
         });
-        navigate(`/reset-password?cpf=${encodeURIComponent(cpf.replace(/\D/g, ''))}&userType=${encodeURIComponent(userType)}`);
+        navigate(`/reset-password?userId=${encodeURIComponent(data.userId)}`);
       } else {
-        toast({
-          title: "Erro",
-          description: data.error || "CPF não encontrado",
-          variant: "destructive"
-        });
+        console.log('❌ [ForgotPassword] userId não encontrado na resposta');
+        throw new Error(data.error || "CPF não encontrado");
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('💥 [ForgotPassword] Erro capturado:', error);
       toast({
         title: "Erro",
-        description: "Erro na verificação. Tente novamente.",
+        description: error.message || "Erro na verificação. Tente novamente.",
         variant: "destructive"
       });
     }
-    
+  
     setLoading(false);
   };
 
