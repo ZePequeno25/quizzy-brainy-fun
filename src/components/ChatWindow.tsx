@@ -56,13 +56,15 @@ const ChatWindow = ({ isOpen, onClose, onMinimize, chattingWith }: ChatWindowPro
 
     try {
       const response = await apiFetch(
-        `/api/chat/${user.uid}/${chattingWith.id}`
+        `/chat/${user.uid}/${chattingWith.id}`
       );
       if (response.ok) {
         const data = await response.json();
-        setMessages(data);
+        // Validação defensiva: garantir que data é um array
+        const messagesArray = Array.isArray(data) ? data : [];
+        setMessages(messagesArray);
         if (chattingWith) {
-          localStorage.setItem(`chatMessages_${userId}_${chattingWith.id}`, JSON.stringify(data));
+          localStorage.setItem(`chatMessages_${userId}_${chattingWith.id}`, JSON.stringify(messagesArray));
         }
       }
     } catch (error) {
@@ -76,7 +78,7 @@ const ChatWindow = ({ isOpen, onClose, onMinimize, chattingWith }: ChatWindowPro
 
     setLoading(true);
     try {
-      const response = await apiFetch('/api/chat', {
+      const response = await apiFetch('/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

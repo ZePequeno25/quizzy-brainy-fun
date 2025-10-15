@@ -99,8 +99,11 @@ const Register = () => {
     
     // Limpar CPF para envio (remover pontos e traços)
     const dataToSend = {
-      ...formData,
-      cpf: formData.cpf.replace(/\D/g, '')
+      userType: formData.userType as 'aluno' | 'professor',
+      nomeCompleto: formData.nomeCompleto,
+      cpf: formData.cpf.replace(/\D/g, ''),
+      genero: formData.genero,
+      dataNascimento: formData.dataNascimento
     };
     
     console.log('📤 [REGISTER] Enviando dados para backend...');

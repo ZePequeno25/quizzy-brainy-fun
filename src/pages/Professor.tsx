@@ -89,8 +89,10 @@ const Professor = () => {
       const response = await apiFetch('/get_students_data');
       if (response.ok) {
         const data = await response.json();
-        setStudents(data);
-        localStorage.setItem(`students_${userId}`, JSON.stringify(data));
+        // Validação defensiva: garantir que data é um array
+        const studentsArray = Array.isArray(data) ? data : [];
+        setStudents(studentsArray);
+        localStorage.setItem(`students_${userId}`, JSON.stringify(studentsArray));
       }
     } catch (error) {
       console.error('Erro ao carregar estudantes:', error);
@@ -107,8 +109,10 @@ const Professor = () => {
       const response = await apiFetch('/questions');
       if (response.ok) {
         const data = await response.json();
+        // Validação defensiva: garantir que data é um array
+        const questionsArray = Array.isArray(data) ? data : [];
         // Filtrar apenas perguntas do professor logado
-        const filteredData = data.filter((q: Question) => q.createdBy === user?.uid);
+        const filteredData = questionsArray.filter((q: Question) => q.createdBy === user?.uid);
         setQuestions(filteredData);
         localStorage.setItem(`questions_${userId}`, JSON.stringify(filteredData));
       }

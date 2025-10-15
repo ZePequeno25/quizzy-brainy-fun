@@ -122,17 +122,20 @@ const Student = () => {
       if (response.ok) {
         const data = await response.json();
         
+        // Validação defensiva: garantir que data é um array
+        const dataArray = Array.isArray(data) ? data : [];
+        
         // Filtrar questões baseado na visibilidade selecionada
-        let filteredQuestions = data;
+        let filteredQuestions = dataArray;
         
         if (selectedVisibility === "teachers" && selectedTeacher !== "all") {
           // Mostrar apenas questões do professor selecionado
-          filteredQuestions = data.filter((q: Question) => 
+          filteredQuestions = dataArray.filter((q: Question) => 
             q.createdBy === selectedTeacher && q.visibility === 'private'
           );
         } else if (selectedVisibility === "public") {
           // Mostrar apenas questões públicas
-          filteredQuestions = data.filter((q: Question) => q.visibility === 'public');
+          filteredQuestions = dataArray.filter((q: Question) => q.visibility === 'public');
         }
         
         setQuestions(filteredQuestions);

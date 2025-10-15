@@ -46,7 +46,7 @@ export const useTeacherStudent = () => {
     // Salvar código no backend
     try {
       const token = getAuthToken();
-      await apiFetch('/api/teacher-code', {
+      await apiFetch('/teacher-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ export const useTeacherStudent = () => {
     if (!user || user.userType !== 'professor') return;
     
     try {
-      const response = await apiFetch(`/api/teacher-code/${user.uid}`);
+      const response = await apiFetch(`/teacher-code/${user.uid}`);
       if (response.ok) {
         const data = await response.json();
         if (data.code) {
@@ -89,7 +89,7 @@ export const useTeacherStudent = () => {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const response = await apiFetch('/api/link-student', {
+      const response = await apiFetch('/link-student', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,11 +131,13 @@ export const useTeacherStudent = () => {
     if (!user || user.userType !== 'aluno') return;
     
     try {
-      const response = await apiFetch(`/api/student-relations/${user.uid}`);
+      const response = await apiFetch(`/student-relations/${user.uid}`);
       if (response.ok) {
         const data = await response.json();
-        setRelations(data);
-        localStorage.setItem(`relations_${userId}`, JSON.stringify(data));
+        // Validação defensiva: garantir que data é um array
+        const relationsArray = Array.isArray(data) ? data : [];
+        setRelations(relationsArray);
+        localStorage.setItem(`relations_${userId}`, JSON.stringify(relationsArray));
       }
     } catch (error) {
       console.error('Erro ao carregar relacionamentos:', error);
@@ -147,11 +149,13 @@ export const useTeacherStudent = () => {
     if (!user || user.userType !== 'professor') return;
     
     try {
-      const response = await apiFetch(`/api/teacher-students/${user.uid}`);
+      const response = await apiFetch(`/teacher-students/${user.uid}`);
       if (response.ok) {
         const data = await response.json();
-        setRelations(data);
-        localStorage.setItem(`relations_${userId}`, JSON.stringify(data));
+        // Validação defensiva: garantir que data é um array
+        const relationsArray = Array.isArray(data) ? data : [];
+        setRelations(relationsArray);
+        localStorage.setItem(`relations_${userId}`, JSON.stringify(relationsArray));
       }
     } catch (error) {
       console.error('Erro ao carregar alunos:', error);
@@ -162,7 +166,7 @@ export const useTeacherStudent = () => {
   const unlinkStudent = async (relationId: string) => {
     try {
       const token = getAuthToken();
-      const response = await apiFetch(`/api/unlink-student/${relationId}`, {
+      const response = await apiFetch(`/unlink-student/${relationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

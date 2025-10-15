@@ -50,7 +50,7 @@ export const useComments = () => {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const response = await apiFetch('/api/comments', {
+      const response = await apiFetch('/comments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ export const useComments = () => {
     setLoading(true);
     try {
       const token = getAuthToken();
-      const response = await apiFetch('/api/comment-response', {
+      const response = await apiFetch('/comment-response', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -139,14 +139,16 @@ export const useComments = () => {
     
     try {
       const endpoint = user.userType === 'professor' 
-        ? `/api/teacher-comments/${user.uid}`
-        : `/api/student-comments/${user.uid}`;
+        ? `/teacher-comments/${user.uid}`
+        : `/student-comments/${user.uid}`;
       
       const response = await apiFetch(endpoint);
       if (response.ok) {
         const data = await response.json();
-        setComments(data);
-        localStorage.setItem(`comments_${userId}`, JSON.stringify(data));
+        // Validação defensiva: garantir que data é um array
+        const commentsArray = Array.isArray(data) ? data : [];
+        setComments(commentsArray);
+        localStorage.setItem(`comments_${userId}`, JSON.stringify(commentsArray));
       }
     } catch (error) {
       console.error('Erro ao carregar comentários:', error);
