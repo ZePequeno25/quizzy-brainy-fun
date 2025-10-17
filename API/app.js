@@ -18,7 +18,7 @@ const app = express();
 // Configurar CORS
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['https://id-preview--77c82926-cc52-4e97-9f3b-585910fae583.lovable.app', 'http://localhost:5173', 'http://localhost:8080'];
+  : ['https://id-preview--77c82926-cc52-4e97-9f3b-585910fae583.lovable.app', 'http://localhost:5173', 'http://localhost:8080/api'];
 
 app.use(
   cors({
@@ -57,5 +57,6 @@ const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
   logger.info(`Servidor rodando na porta ${PORT}`);
 });
+
 
 
