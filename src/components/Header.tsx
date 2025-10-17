@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { AccessibilityButton } from "@/components/AccessibilityButton";
 import { LogOut, Home, BookOpen, Menu, X } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -23,10 +22,10 @@ const Header = () => {
           {/* Logo */}
           <Button 
             variant="ghost" 
-            className="text-white hover:bg-purple-700 p-0 text-lg sm:text-2xl"
+            className="text-white hover:bg-purple-700 p-2 text-base sm:text-lg lg:text-2xl"
             onClick={() => handleNavigation('/')}
           >
-            <h1 className="font-bold">Aprender em Movimento</h1>
+            <h1 className="font-bold truncate max-w-[200px] sm:max-w-none">Aprender em Movimento</h1>
           </Button>
           
           {/* Desktop Navigation */}
@@ -88,72 +87,79 @@ const Header = () => {
             )}
           </nav>
 
-          {/* Mobile Navigation */}
-          <div className="flex lg:hidden items-center gap-2">
+          {/* Mobile Menu Button - sempre visível em telas pequenas */}
+          <div className="lg:hidden flex items-center gap-2">
             <AccessibilityButton />
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white hover:bg-purple-700">
-                  <Menu className="w-6 h-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="bg-purple-600 text-white border-purple-700">
-                <nav className="flex flex-col gap-4 mt-8">
-                  <Button 
-                    variant="ghost" 
-                    className="text-white hover:bg-purple-700 justify-start"
-                    onClick={() => handleNavigation('/')}
-                  >
-                    <Home className="w-4 h-4 mr-2" />
-                    Início
-                  </Button>
-                  
-                  {user ? (
-                    <>
-                      <Button 
-                        variant="ghost" 
-                        className="text-white hover:bg-purple-700 justify-start"
-                        onClick={() => handleNavigation(user.userType === 'professor' ? '/professor' : '/student')}
-                      >
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        {user.userType === 'professor' ? 'Painel' : 'Quiz'}
-                      </Button>
-                      
-                      <div className="pt-4 border-t border-purple-500">
-                        <p className="text-sm mb-2">Olá, {user.nomeCompleto.split(' ')[0]}</p>
-                        <Button 
-                          variant="destructive" 
-                          className="w-full bg-red-600 hover:bg-red-700 justify-start"
-                          onClick={logout}
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Sair
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Button 
-                        variant="ghost" 
-                        className="text-white hover:bg-purple-700 justify-start"
-                        onClick={() => handleNavigation('/login')}
-                      >
-                        Login
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        className="text-white hover:bg-purple-700 justify-start"
-                        onClick={() => handleNavigation('/register')}
-                      >
-                        Cadastro
-                      </Button>
-                    </>
-                  )}
-                </nav>
-              </SheetContent>
-            </Sheet>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white hover:bg-purple-700 lg:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </Button>
           </div>
         </div>
+
+        {/* Mobile Navigation Menu - Dropdown simples */}
+        {mobileMenuOpen && (
+          <nav className="lg:hidden mt-4 flex flex-col gap-2 pb-4 border-t border-purple-500 pt-4">
+            <Button 
+              variant="ghost" 
+              className="text-white hover:bg-purple-700 justify-start w-full"
+              onClick={() => handleNavigation('/')}
+            >
+              <Home className="w-4 h-4 mr-2" />
+              Início
+            </Button>
+            
+            {user ? (
+              <>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-purple-700 justify-start w-full"
+                  onClick={() => handleNavigation(user.userType === 'professor' ? '/professor' : '/student')}
+                >
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  {user.userType === 'professor' ? 'Painel' : 'Quiz'}
+                </Button>
+                
+                <div className="pt-2 border-t border-purple-500 mt-2">
+                  <p className="text-sm mb-2 px-4">Olá, {user.nomeCompleto.split(' ')[0]}</p>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full bg-red-600 hover:bg-red-700 justify-start"
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sair
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-purple-700 justify-start w-full"
+                  onClick={() => handleNavigation('/login')}
+                >
+                  Login
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-purple-700 justify-start w-full"
+                  onClick={() => handleNavigation('/register')}
+                >
+                  Cadastro
+                </Button>
+              </>
+            )}
+          </nav>
+        )}
       </div>
     </header>
   );
