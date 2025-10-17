@@ -12,3 +12,16 @@ ALLOWED_ORIGINS=http://127.0.0.1:5000,https://77c82926-cc52-4e97-9f3b-585910fae5
 depois git clone desse repositório: https://github.com/ZePequeno25/quizzy-brainy-fun.git no computador seu abra cmd ou terminal npm i e npm install firebase firebase logout se ouver uma conta diferente logada e firebase login para logar com a conta que adicionei ao meu projeto depois so confirma e pronto depois acesse a pasta src/lib/api.ts e muda o API_URL para o link do render que fizemos antes normalmente encontrado nos events depois execute o comando npm run build  para construir o projeto e juntar na dist depois execute firebase init depois digite y , aqui voce vai descer com a seta ate achar Hosting: Configure files for Firebase Hosting and (optionally) set up GitHub Action deploys e click espaço e enter digite dist enter, y enter, n enter
 depois digite firebase emulators:start
 
+## Build do Projeto
+
+Para manter o build sempre atualizado na pasta `dist`:
+
+```bash
+# Gerar build de produção
+npm run build
+
+# O build será criado automaticamente na pasta dist/
+```
+
+**Importante**: Sempre execute `npm run build` antes de fazer deploy para garantir que os arquivos estejam atualizados.
+
