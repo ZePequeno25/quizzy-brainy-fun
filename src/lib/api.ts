@@ -1,4 +1,4 @@
-const API_URL = 'http://190.115.208.54:5050/api';
+const API_URL = 'https://aprender-em-movimento-js.onrender.com/api';
 
 /**
  * Verifica se a API está disponível
