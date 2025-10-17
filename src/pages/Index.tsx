@@ -98,93 +98,95 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
         
-        <div className="container mx-auto py-16 px-4">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-primary mb-4">
+      <div className="container mx-auto py-8 sm:py-12 md:py-16 px-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-4">
             Saber em Movimento
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Uma plataforma educacional interativa que combina aprendizado com movimento, 
-              inspirada na capoeira e na educação inclusiva.
-            </p>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
+            Uma plataforma educacional interativa que combina aprendizado com movimento, 
+            inspirada na capoeira e na educação inclusiva.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
+          <Card className="text-center">
+            <CardHeader>
+              <Brain className="w-10 h-10 sm:w-12 sm:h-12 text-primary mx-auto mb-2" />
+              <CardTitle className="text-lg sm:text-xl">Aprendizado Interativo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-sm sm:text-base">
+                Questionários dinâmicos com feedback instantâneo
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-accent mx-auto mb-2" />
+              <CardTitle className="text-lg sm:text-xl">Sistema de Graduação</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-sm sm:text-base">
+                Progrida através dos cordões da capoeira conforme aprende
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-600 mx-auto mb-2" />
+              <CardTitle className="text-lg sm:text-xl">Múltiplos Temas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-sm sm:text-base">
+                Tecnologia, História, Ciência e muito mais
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <Users className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600 mx-auto mb-2" />
+              <CardTitle className="text-lg sm:text-xl">Gestão Educacional</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-sm sm:text-base">
+                Professores podem gerenciar conteúdos e acompanhar progresso
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="text-center space-y-4">
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4 sm:mb-6 px-4">
+            Comece sua jornada educacional agora!
+          </h2>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
+            <Button 
+              size="lg" 
+              className="w-full sm:w-auto"
+              onClick={() => {
+                console.log('🔘 [INDEX] Botão "Fazer Login" clicado - navegando para /login');
+                navigate('/login');
+              }}
+            >
+              Fazer Login
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                console.log('🔘 [INDEX] Botão "Criar Conta" clicado - navegando para /register');
+                navigate('/register');
+              }}
+            >
+              Criar Conta
+            </Button>
           </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <Card className="text-center">
-              <CardHeader>
-                <Brain className="w-12 h-12 text-primary mx-auto mb-2" />
-                <CardTitle>Aprendizado Interativo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Questionários dinâmicos com feedback instantâneo
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center">
-              <CardHeader>
-                <Trophy className="w-12 h-12 text-accent mx-auto mb-2" />
-                <CardTitle>Sistema de Graduação</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Progrida através dos cordões da capoeira conforme aprende
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center">
-              <CardHeader>
-                <BookOpen className="w-12 h-12 text-emerald-600 mx-auto mb-2" />
-                <CardTitle>Múltiplos Temas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Tecnologia, História, Ciência e muito mais
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center">
-              <CardHeader>
-                <Users className="w-12 h-12 text-blue-600 mx-auto mb-2" />
-                <CardTitle>Gestão Educacional</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Professores podem gerenciar conteúdos e acompanhar progresso
-                </CardDescription>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="text-center space-y-4">
-            <h2 className="text-2xl font-semibold text-foreground mb-6">
-              Comece sua jornada educacional agora!
-            </h2>
-            <div className="space-x-4">
-              <Button 
-                size="lg" 
-                onClick={() => {
-                  console.log('🔘 [INDEX] Botão "Fazer Login" clicado - navegando para /login');
-                  navigate('/login');
-                }}
-              >
-                Fazer Login
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={() => {
-                  console.log('🔘 [INDEX] Botão "Criar Conta" clicado - navegando para /register');
-                  navigate('/register');
-                }}
-              >
-                Criar Conta
-              </Button>
-            </div>
-          </div>
+        </div>
       </div>
     </div>
   );

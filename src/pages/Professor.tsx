@@ -419,45 +419,52 @@ const Professor = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-purple-600 mb-2">
+      <div className="container mx-auto py-4 sm:py-8 px-4">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
             Área do Professor
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Gerencie questionários, visualize dados dos alunos e faça upload de novos conteúdos
           </p>
         </div>
 
-        <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="upload" className="flex items-center gap-2">
+        <Tabs defaultValue="upload" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 h-auto gap-1">
+            <TabsTrigger value="upload" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
               <FileText className="w-4 h-4" />
-              Upload XML
+              <span className="hidden sm:inline">Upload XML</span>
+              <span className="sm:hidden">XML</span>
             </TabsTrigger>
-            <TabsTrigger value="add" className="flex items-center gap-2">
+            <TabsTrigger value="add" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
               <Plus className="w-4 h-4" />
-              Adicionar
+              <span className="hidden sm:inline">Adicionar</span>
+              <span className="sm:hidden">Add</span>
             </TabsTrigger>
-            <TabsTrigger value="edit" className="flex items-center gap-2">
+            <TabsTrigger value="edit" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
               <Edit className="w-4 h-4" />
-              Editar
+              <span className="hidden sm:inline">Editar</span>
+              <span className="sm:hidden">Edit</span>
             </TabsTrigger>
-            <TabsTrigger value="questions" className="flex items-center gap-2">
+            <TabsTrigger value="questions" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
               <BarChart3 className="w-4 h-4" />
-              Questionários
+              <span className="hidden sm:inline">Questionários</span>
+              <span className="sm:hidden">Quest.</span>
             </TabsTrigger>
-            <TabsTrigger value="students" className="flex items-center gap-2">
+            <TabsTrigger value="students" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
               <Users className="w-4 h-4" />
-              Alunos
+              <span className="hidden sm:inline">Alunos</span>
+              <span className="sm:hidden">Alunos</span>
             </TabsTrigger>
-            <TabsTrigger value="link" className="flex items-center gap-2">
+            <TabsTrigger value="link" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
               <Link className="w-4 h-4" />
-              Vinculação
+              <span className="hidden sm:inline">Vinculação</span>
+              <span className="sm:hidden">Link</span>
             </TabsTrigger>
-            <TabsTrigger value="comments" className="flex items-center gap-2">
+            <TabsTrigger value="comments" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
               <MessageCircle className="w-4 h-4" />
-              Comentários
+              <span className="hidden sm:inline">Comentários</span>
+              <span className="sm:hidden">Msgs</span>
             </TabsTrigger>
           </TabsList>
 
