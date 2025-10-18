@@ -294,39 +294,36 @@ const Student = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="container mx-auto py-4 sm:py-8 px-4">
-        <div className="mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-purple-600 mb-2">
             Área do Aluno
           </h1>
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-gray-600">
             Bem-vindo, {user.nomeCompleto.split(' ')[0]}!
           </p>
         </div>
 
-        <Tabs defaultValue="quiz" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-3 h-auto">
-            <TabsTrigger value="quiz" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+        <Tabs defaultValue="quiz" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="quiz" className="flex items-center gap-2">
               <Play className="w-4 h-4" />
-              <span className="hidden sm:inline">Quiz</span>
-              <span className="sm:hidden">Quiz</span>
+              Quiz
             </TabsTrigger>
-            <TabsTrigger value="link" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+            <TabsTrigger value="link" className="flex items-center gap-2">
               <Link className="w-4 h-4" />
-              <span className="hidden sm:inline">Professores</span>
-              <span className="sm:hidden">Prof.</span>
+              Professores
             </TabsTrigger>
-            <TabsTrigger value="chat" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm">
+            <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Chat</span>
-              <span className="sm:hidden">Chat</span>
+              Chat
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="quiz">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+            <div className="grid lg:grid-cols-3 gap-8">
           {/* Painel do usuário */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
+          <div className="lg:col-span-1">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -379,7 +376,7 @@ const Student = () => {
           </div>
 
           {/* Área do quiz */}
-          <div className="lg:col-span-2 order-1 lg:order-2">
+          <div className="lg:col-span-2">
             {!isQuizActive ? (
               <Card>
                 <CardHeader>

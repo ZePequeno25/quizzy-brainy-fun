@@ -105,14 +105,14 @@ const Login = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="container mx-auto py-4 sm:py-8 px-4">
+      <div className="container mx-auto py-8 px-4">
         <div className="max-w-md mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl sm:text-2xl text-center text-purple-600">
+              <CardTitle className="text-2xl text-center text-purple-600">
                 Login
               </CardTitle>
-              <CardDescription className="text-center text-sm sm:text-base">
+              <CardDescription className="text-center">
                 Entre com suas credenciais para acessar o sistema
               </CardDescription>
             </CardHeader>
@@ -166,24 +166,22 @@ const Login = () => {
 
                 <div className="text-center space-y-2">
                   <Button 
-                    type="button"
                     variant="link" 
                     onClick={() => {
                       console.log('🔗 [LOGIN] Navegando para página de cadastro');
                       navigate('/register');
                     }}
-                    className="text-purple-600 text-sm sm:text-base w-full"
+                    className="text-purple-600"
                   >
                     Não tem conta? Cadastre-se
                   </Button>
                   <Button 
-                    type="button"
                     variant="link" 
                     onClick={() => {
                       console.log('🔗 [LOGIN] Navegando para recuperação de senha');
                       navigate('/forgot-password');
                     }}
-                    className="text-purple-600 text-sm sm:text-base w-full"
+                    className="text-purple-600"
                   >
                     Esqueci minha senha
                   </Button>

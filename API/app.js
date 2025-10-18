@@ -57,6 +57,3 @@ const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
   logger.info(`Servidor rodando na porta ${PORT}`);
 });
-
-
-

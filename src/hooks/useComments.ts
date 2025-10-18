@@ -135,23 +135,46 @@ export const useComments = () => {
 
   // Carregar comentários (para alunos: seus comentários; para professores: comentários dos alunos vinculados)
   const loadComments = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('❌ [useComments] Usuário não autenticado');
+      return;
+    }
     
     try {
       const endpoint = user.userType === 'professor' 
         ? `/teacher-comments/${user.uid}`
         : `/student-comments/${user.uid}`;
+      console.log(`📡 [useComments] Carregando comentários de ${endpoint}`);
       
-      const response = await apiFetch(endpoint);
+      const token = await getAuthToken();
+      console.log(`🔑 [useComments] Token JWT: ${token.substring(0, 10)}...`);
+      
+      const response = await apiFetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
-        // Validação defensiva: garantir que data é um array
-        const commentsArray = Array.isArray(data) ? data : [];
+        const commentsArray = Array.isArray(data.comments) ? data.comments : [];
+        console.log(`✅ [useComments] ${commentsArray.length} comentários carregados`);
         setComments(commentsArray);
         localStorage.setItem(`comments_${userId}`, JSON.stringify(commentsArray));
+      } else {
+        console.error(`❌ [useComments] Erro na API: ${response.status} - ${endpoint}`);
+        toast({
+          title: "Erro",
+          description: `Falha ao carregar comentários: ${response.statusText}`,
+          variant: "destructive"
+        });
       }
     } catch (error) {
-      console.error('Erro ao carregar comentários:', error);
+      console.error(`❌ [useComments] Erro ao carregar comentários: ${error.message}`);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar comentários",
+        variant: "destructive"
+      });
     }
   };
 
