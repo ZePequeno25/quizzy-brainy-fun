@@ -327,17 +327,6 @@ export const useAuth = () => {
   const getAuthToken = async () => {
     const token = localStorage.getItem('authToken');
     console.log('🔑 [useAuth] Token solicitado:', token ? 'Token encontrado' : 'Nenhum token');
-    if (user && (!token || token === 'undefined')) {
-      try {
-        const newToken = await user.getIdToken(true); // Força renovação do token
-        localStorage.setItem('authToken', newToken);
-        console.log('🔄 [useAuth] Token renovado:', newToken.substring(0, 10) + '...');
-        return newToken;
-      } catch (error) {
-        console.error('❌ [useAuth] Erro ao renovar token:', error.message);
-        return null;
-      }
-    }
     return token;
   };
 
