@@ -1,74 +1,52 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useToast } from './use-toast';
 
-interface Student {
-  id: string;
-  nomeCompleto: string;
-  email: string;
-  score: number;
-  cpf: string;
+// Relação entre professor e aluno
+interface Relation {
+  teacherId: string;
+  teacherName: string;
+  studentId: string;
+  studentName: string;
+  createdAt: string;
 }
 
-interface Question {
-  questionId: string;
-  question: string;
-  correctAnswer: string;
-  userAnswer: string;
-  isCorrect: boolean;
-}
-
-interface StudentData extends Student {
-  questions: Question[];
-}
-
-export const useTeacherStudent = (teacherId: string | undefined) => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<StudentData | null>(null);
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [loadingStudentData, setLoadingStudentData] = useState(false);
+export const useTeacherStudent = (userId: string | undefined) => {
+  const [relations, setRelations] = useState<Relation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const fetchStudents = useCallback(async () => {
-    if (!teacherId) return;
-    setLoadingStudents(true);
+  const fetchRelations = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await apiFetch(`/students_data`);
-      if (!response.ok) throw new Error('Falha ao carregar alunos');
+      const response = await apiFetch(`/relations/${userId}`);
+      if (!response.ok) {
+        throw new Error('Falha ao carregar as relações');
+      }
       const data = await response.json();
-      setStudents(data);
+      setRelations(Array.isArray(data) ? data : []);
     } catch (err: any) {
       setError(err.message);
+      toast({
+        title: 'Erro ao buscar relações',
+        description: err.message,
+        variant: 'destructive',
+      });
     } finally {
-      setLoadingStudents(false);
+      setLoading(false);
     }
-  }, [teacherId]);
-
-  const fetchStudentData = async (studentId: string) => {
-    if (!teacherId) return;
-    setLoadingStudentData(true);
-    try {
-      const response = await apiFetch(`/student_answers/${studentId}`);
-      if (!response.ok) throw new Error('Falha ao carregar dados do aluno');
-      const data = await response.json();
-      setSelectedStudent(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoadingStudentData(false);
-    }
-  };
+  }, [userId, toast]);
 
   useEffect(() => {
-    fetchStudents();
-  }, [fetchStudents, teacherId]);
+    fetchRelations();
+  }, [fetchRelations]);
 
-  return {
-    students,
-    selectedStudent,
-    loadingStudents,
-    loadingStudentData,
-    error,
-    fetchStudentData,
-    fetchStudents,
-  };
+  return { relations, loading, error, refetch: fetchRelations };
 };

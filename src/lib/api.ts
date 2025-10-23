@@ -1,3 +1,4 @@
+
 import { auth } from '@/firebase'; // Import auth from your firebase config file
 
 const API_URL = 'https://aprender-em-movimento-js.onrender.com/api';
@@ -25,20 +26,24 @@ export const checkApiHealth = async (): Promise<boolean> => {
  */
 export const apiFetch = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
   const user = auth.currentUser;
+  const headers = new Headers(options.headers);
 
-  let headers = new Headers(options.headers);
-
-  if (user) {
-    try {
-      const token = await user.getIdToken();
-      headers.set('Authorization', `Bearer ${token}`);
-    } catch (error) {
-      console.error('❌ [apiFetch] Erro ao obter token de autenticação:', error);
-    }
-  }
-
+  // Garante que o Content-Type seja definido, se não estiver presente
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
+  }
+
+  // Se houver um usuário logado, obtém o token e o adiciona ao cabeçalho.
+  if (user) {
+    try {
+      // Força a renovação do token para garantir que está sempre atualizado.
+      const token = await user.getIdToken(true);
+      headers.set('Authorization', `Bearer ${token}`);
+    } catch (error) {
+      console.error('❌ [apiFetch] Erro ao obter ou renovar token de autenticação:', error);
+      // Lança um erro para interromper a requisição, pois ela estaria não autenticada.
+      throw new Error('Falha na autenticação do usuário.');
+    }
   }
 
   const config: RequestInit = {
@@ -48,12 +53,20 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}): Pro
 
   try {
     const response = await fetch(`${API_URL}${endpoint}`, config);
-    if (!response.ok && response.status >= 500) {
-      console.error(`Erro na API: ${response.status} - ${endpoint}`);
+
+    // Adiciona log detalhado para todas as respostas não-OK
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => 'Corpo da resposta não pôde ser lido');
+      console.error(
+        `❌ [apiFetch] API call para ${endpoint} falhou com status ${response.status}. Corpo: ${errorBody}`
+      );
     }
+
     return response;
   } catch (error) {
-    console.error(`Falha ao conectar com a API: ${endpoint}`, error);
+    // Log para erros de rede (ex: falha na conexão)
+    console.error(`❌ [apiFetch] Falha de rede ao conectar com a API: ${endpoint}`, error);
+    // Relança o erro para que a lógica de chamada (e.g., em um hook) possa tratá-lo.
     throw error;
   }
 };
