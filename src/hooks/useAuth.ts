@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
-import { getAuth, signInWithCustomToken } from 'firebase/auth';
+import { signInWithCustomToken } from 'firebase/auth';
+import { auth } from '@/firebase'; // Import auth from your firebase config file
 
 interface User {
   uid: string;
@@ -19,7 +20,6 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const auth = getAuth();
 
   const cleanCpf = (cpf: string): string => {
     return cpf.replace(/[\.\-]/g, '');
@@ -38,8 +38,6 @@ export const useAuth = () => {
             logout();
           }
         } else {
-          // This case might happen if the local storage is cleared but the Firebase session persists.
-          // You might want to fetch user data from your backend here.
           logout();
         }
       } else {
@@ -49,7 +47,7 @@ export const useAuth = () => {
     });
 
     return () => unsubscribe();
-  }, [auth]);
+  }, []);
 
   const login = async (cpf: string, password: string, userType: 'aluno' | 'professor') => {
     const cleanedCpf = cleanCpf(cpf);
@@ -77,12 +75,10 @@ export const useAuth = () => {
       const data = await response.json();
       const { token, ...userDataResponse } = data;
 
-      // Step 1: Sign in with the custom token
       const userCredential = await signInWithCustomToken(auth, token);
       const firebaseUser = userCredential.user;
 
       if (firebaseUser) {
-        // Step 2: Prepare user data for local storage
         const userData = {
           uid: firebaseUser.uid,
           email: userDataResponse.email,
@@ -91,7 +87,6 @@ export const useAuth = () => {
           cpf: cleanedCpf,
         };
 
-        // Step 3: Persist user data
         localStorage.setItem('currentUser', JSON.stringify(userData));
         setUser(userData);
 
@@ -123,7 +118,6 @@ export const useAuth = () => {
   const logout = () => {
     auth.signOut();
     localStorage.removeItem('currentUser');
-    // You might want to clear other specific local storage items here as well
     setUser(null);
     toast({
       title: 'Logout realizado',
