@@ -3,15 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { Upload, FileText } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
-const QuestionnaireUpload = () => {
+// Define the types for the component's props
+interface QuestionnaireUploadProps {
+  onSuccess: () => void; // Expect a function that returns nothing
+}
+
+const QuestionnaireUpload = ({ onSuccess }: QuestionnaireUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
-  const { getAuthToken } = useAuth();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -38,28 +41,16 @@ const QuestionnaireUpload = () => {
       return;
     }
 
-    const token = getAuthToken();
-    if (!token) {
-      toast({
-        title: "Erro de autenticação",
-        description: "Faça login novamente",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setUploading(true);
 
     try {
       const formData = new FormData();
       formData.append('file', file);
 
+      // apiFetch handles the authentication token automatically
       const response = await apiFetch('/upload_questions_xml', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
+        body: formData, // For FormData, apiFetch and browser will set the correct Content-Type
       });
 
       const data = await response.json();
@@ -73,7 +64,12 @@ const QuestionnaireUpload = () => {
         description: data.message,
       });
 
-      // Limpar o arquivo selecionado
+      // Call the callback function provided by the parent component
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      // Clear the selected file
       setFile(null);
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (input) input.value = '';
