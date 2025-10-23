@@ -13,8 +13,79 @@ const isValidId = (id, paramName) => {
     return true;
 };
 
+const getStudentsHandler = async (req, res) => {
+  try {
+    console.log('👥 [relationshipController] Buscando dados dos alunos por Document ID...');
+    
+    const userId = await getCurrentUserId(req);
+    console.log(`🔍 [relationshipController] Usuário autenticado (Document ID): ${userId}`);
+    
+    // ✅ VERIFICAR SE É PROFESSOR BUSCANDO PELO DOCUMENT ID
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      console.log(`❌ [relationshipController] Usuário não encontrado: ${userId}`);
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    const userData = userDoc.data();
+    if (userData.userType !== 'professor') {
+      console.log(`❌ [relationshipController] Usuário ${userId} não é professor`);
+      return res.status(403).json({ error: 'Apenas professores podem acessar dados dos alunos' });
+    }
+
+    // Buscar alunos vinculados ao professor pelo Document ID
+    const snapshot = await db.collection('teacher_students')
+      .where('teacher_id', '==', userId) // ✅ Document ID do professor
+      .get();
+    
+    console.log(`📊 [relationshipController] ${snapshot.size} relações encontradas`);
+    
+    const students = [];
+    
+    for (const doc of snapshot.docs) {
+      const relationData = doc.data();
+      const studentId = relationData.student_id; // ✅ Document ID do aluno
+      
+      try {
+        // ✅ BUSCAR ALUNO PELO DOCUMENT ID
+        const studentDoc = await db.collection('users').doc(studentId).get();
+        
+        if (studentDoc.exists) {
+          const studentData = studentDoc.data();
+          students.push({
+            id: studentId, // ✅ Document ID do aluno
+            nomeCompleto: studentData.nomeCompleto,
+            email: studentData.email,
+            userType: studentData.userType,
+            score: studentData.score || 0,
+            rank: studentData.rank || 'Iniciante',
+            cpf: studentData.cpf,
+            dataNascimento: studentData.dataNascimento,
+            // Dados da relação
+            relationId: doc.id, // ✅ Document ID da relação
+            joined_at: relationData.joined_at ? relationData.joined_at.toDate().toISOString() : null,
+            student_name: relationData.student_name,
+            teacher_name: relationData.teacher_name
+          });
+        } else {
+          console.warn(`⚠️ [relationshipController] Aluno não encontrado: ${studentId}`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ [relationshipController] Erro ao buscar aluno ${studentId}: ${error.message}`);
+      }
+    }
+
+    console.log(`✅ [relationshipController] ${students.length} alunos retornados`);
+    res.status(200).json(students);
+    
+  } catch (error) {
+    console.error(`❌ [relationshipController] Erro ao buscar alunos: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getCurrentUserId = async (req) => {
-    const token = req.headers.autorization?.replace('Bearer ', '');
+    const token = req.headers.authorization?.replace('Bearer ', '');
     if(!token) throw new Error('Authentication token unavailable');
     const decodedToken = await admin.auth().verifyIdToken(token);
     return decodedToken.uid;
@@ -110,18 +181,21 @@ const linkStudentByCode = async (req, res) =>{
     }
 };
 
-const getTeacherStudentsHandler = async (req, res) =>{
-    try{
-        const {teacherId} = req.params;
-        if(!isValidId(teacherId, 'teacherId')){
-            return res.status(400).json({ error: 'Invalid teacherId' });
+const getTeacherStudentsHandler = async (req, res) => {
+    try {
+        const userId = await getCurrentUserId(req);
+        console.log(`🔍 [relationshipController] Buscando alunos para teacherId: ${userId}`);
+        
+        if (!await isProfessor(userId)) {
+        return res.status(403).json({ error: 'Only teachers can access student data' });
         }
-        const relations = await getTeacherStudents(teacherId);
+
+        const relations = await getTeacherStudents(userId);
         res.status(200).json({ relations });
 
-    }catch (error){
-        logger.error(`Erro ao listar alunos: ${error.message}`);
-        res.status(500).json({ error: error.message });
+    } catch (error) {
+        console.error(`Erro ao listar alunos: ${error.message}`);
+        res.status(error.message.includes('Token') ? 401 : 500).json({ error: error.message });
     }
 };
 
@@ -182,5 +256,6 @@ module.exports = {
     linkStudentByCode,
     getTeacherStudentsHandler,
     getStudentRelationsHandler,
-    unlinkStudent
+    unlinkStudent,
+    getStudentsHandler
   };

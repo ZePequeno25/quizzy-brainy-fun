@@ -1,3 +1,4 @@
+//ok
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -18,7 +19,7 @@ const app = express();
 // Configurar CORS
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['https://id-preview--77c82926-cc52-4e97-9f3b-585910fae583.lovable.app', 'http://localhost:5173', 'http://localhost:8080/api'];
+  : ['https://id-preview--77c82926-cc52-4e97-9f3b-585910fae583.lovable.app', 'http://localhost:5173', 'http://localhost:3000'];
 
 app.use(
   cors({
@@ -31,7 +32,7 @@ app.use(
         callback(new Error('Origin not allowed by CORS'));
       }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS','PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -47,6 +48,7 @@ app.use('/api', questionRoutes);
 app.use('/api', relationshipRoutes);
 app.use('/api', commentRoutes);
 app.use('/api', chatRoutes);
+
 // Middleware de erro
 app.use((err, req, res, next) => {
   logger.error(`Erro: ${err.message}`);

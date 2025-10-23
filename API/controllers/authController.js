@@ -173,31 +173,45 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   logger.logRequest(req, 'AUTH');
   
-  try {
+try {
     const { email, password, cpf, userType } = req.body;
 
     // Login com CPF + userType
     if (cpf && userType && password && !email) {
       console.log('=== LOGIN SIMPLIFICADO ===');
-      console.log('CPF:', cpf.substring(0, 3) + '***');
-      console.log('UserType:', userType);
-      console.log('Password recebido:', password);
+      
+      // ✅ NORMALIZA OS DADOS
+      const normalizedCpf = cpf.replace(/\D/g, '');
+      const normalizedUserType = userType.toLowerCase();
+      
+      console.log('CPF (normalizado):', normalizedCpf);
+      console.log('UserType (normalizado):', normalizedUserType);
 
-      // Buscar usuário por CPF e userType
+      // DEBUG: Ver todos os usuários
+      const debugSnapshot = await db.collection('users').limit(10).get();
+      console.log('👥 Primeiros 10 usuários no sistema:');
+      debugSnapshot.forEach(doc => {
+        const user = doc.data();
+        console.log(`- ${doc.id}: ${user.nomeCompleto} (${user.userType}) - CPF: ${user.cpf}`);
+      });
+
+      // Buscar usuário
       const userSnapshot = await db.collection('users')
-        .where('cpf', '==', cpf)
-        .where('userType', '==', userType)
+        .where('cpf', '==', normalizedCpf)
+        .where('userType', '==', normalizedUserType)
         .get();
 
+      console.log('🎯 Usuários encontrados:', userSnapshot.size);
+
       if (userSnapshot.empty) {
-        console.log('❌ Usuário não encontrado');
+        console.log('❌ Nenhum usuário com CPF:', normalizedCpf, 'e tipo:', normalizedUserType);
         return res.status(401).json({ error: 'Usuário não encontrado' });
       }
 
       const userDoc = userSnapshot.docs[0];
       const userData = userDoc.data();
       
-      console.log('Usuário encontrado:', userData.email);
+      console.log('✅ Usuário encontrado:', userData.email);
       console.log('Hash armazenado:', userData.password.substring(0, 20) + '...');
 
       // VERIFICAR SENHA DIRETAMENTE COM O HASH SALVO
@@ -214,7 +228,30 @@ const login = async (req, res) => {
 
       // GERAR TOKEN
       const token = await admin.auth().createCustomToken(userDoc.id);
+
+      console.log('🔑 [LOGIN] Token gerado:');
+      console.log('📏 Comprimento:', token.length);
+      console.log('📝 Primeiros 50 chars:', token.substring(0, 50));
+      console.log('📝 Últimos 50 chars:', token.substring(token.length - 50));
+
+      // ✅ SALVAR O TOKEN NO CAMPO CORRETO (currentToken)
+      console.log('💾 [LOGIN] Salvando token no Firestore...');
+      await db.collection('users').doc(userDoc.id).update({
+        currentToken: token, // ✅ Agora salva no campo currentToken
+        lastLogin: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      console.log('✅ Token salvo no campo currentToken do usuário:', userDoc.id);
       
+      // ✅ VERIFICAR SE SALVOU CORRETAMENTE
+      const userAfterSave = await db.collection('users').doc(userDoc.id).get();
+      const savedToken = userAfterSave.data().currentToken;
+
+      console.log('✅ [LOGIN] Token salvo no Firestore:');
+      console.log('📏 Comprimento salvo:', savedToken.length);
+      console.log('📝 Primeiros 50 chars salvos:', savedToken.substring(0, 50));
+      console.log('🔍 Tokens são IGUAIS?', token === savedToken);
+
       return res.status(200).json({ 
         userId: userDoc.id, 
         token, 
@@ -223,7 +260,7 @@ const login = async (req, res) => {
         email: userData.email 
       });
     }
-
+    
     // Login com email (mantém original)
     if (email && password) {
       const user = await verifyUserCredentials(email, password);
@@ -232,6 +269,7 @@ const login = async (req, res) => {
       }
 
       const token = await admin.auth().createCustomToken(user.userId);
+      
       return res.status(200).json({ 
         userId: user.userId, 
         token, 

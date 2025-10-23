@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('../middlewares/authMiddleware');
 const { 
     addQuestionHandler, 
     getQuestionsHandler, 
@@ -8,10 +9,12 @@ const {
     updateQuestionVisibilityHandler
 } = require('../controllers/questionController');
 
+router.use(authMiddleware); // ✅ Aplica a TODAS as rotas
+
 router.post('/questions', addQuestionHandler);
 router.get('/questions', getQuestionsHandler);
 router.put('/questions/:questionId', editQuestionHandler);
-router.delete('/delete_question/:questionId', deleteQuestionHandler);
-router.patch('/questions/visibility', updateQuestionVisibilityHandler);
+router.delete('/questions/:questionId', deleteQuestionHandler);
+router.patch('/questions/:questionId/visibility', updateQuestionVisibilityHandler);
 
 module.exports = router;

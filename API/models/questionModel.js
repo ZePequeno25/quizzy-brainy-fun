@@ -2,29 +2,29 @@ const { admin, db } = require('../utils/firebase');
 const logger = require('../utils/logger');
 
 const addQuestion = async (questionData) => {
-    try{
+    try {
         const docRef = await db.collection('questions').add({
             ...questionData,
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+            created_at: admin.firestore.FieldValue.serverTimestamp(), // ✅ Campo correto
+            visibility: questionData.visibility || 'public'
         });
+        console.log(`✅ [questionModel] Questão criada: ${docRef.id}`);
         return docRef.id;
-
-    }catch (error){
-        logger.error(`Erro ao adicionar pergunta: ${error.message}`);
+    } catch (error) {
+        console.error(`Erro ao adicionar questão: ${error.message}`);
         throw error;
     }
 };
 
-const getQuestions = async ()=>{
+const getQuestions = async () => {
     try{
         const snapshot = await db.collection('questions').get();
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: doc.data().createdAt ? doc.data().createdAt.toDate().toISOString() : null,
-            update_at: doc.data().update_at ? doc.data().update_at.toDate().toISOString() : null
+            created_at: doc.data().created_at ? doc.data().created_at.toDate().toISOString() : null,
+            updated_at: doc.data().updated_at ? doc.data().updated_at.toDate().toISOString() : null
         }));
-
     }catch (error){
         logger.error(`Erro ao listar perguntas: ${error.message}`);
         throw error;
@@ -32,14 +32,14 @@ const getQuestions = async ()=>{
 };
 
 const updateQuestion = async (questionId, questionData) => {
-    try{
+    try {
         await db.collection('questions').doc(questionId).update({
             ...questionData,
-            update_at: admin.firestore.FieldValue.serverTimestamp()
+            updated_at: admin.firestore.FieldValue.serverTimestamp() // ✅ Campo correto
         });
-
-    }catch (error){
-        logger.error(`Erro ao atualizar pergunta ${questionId}: ${error.message}`);
+        console.log(`✅ [questionModel] Questão atualizada: ${questionId}`);
+    } catch (error) {
+        console.error(`Erro ao atualizar questão ${questionId}: ${error.message}`);
         throw error;
     }
 };
@@ -47,7 +47,7 @@ const updateQuestion = async (questionId, questionData) => {
 const deleteQuestion = async (questionId) => {
     try{
         await db.collection('questions').doc(questionId).delete();
-
+        console.log(`✅ [questionModel] Questão deletada: ${questionId}`);
     }catch (error){
         logger.error(`Erro ao deletar pergunta ${questionId}: ${error.message}`);
         throw error;

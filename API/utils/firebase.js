@@ -1,8 +1,5 @@
 const admin = require('firebase-admin');
 const logger = require('./logger');
-const dotenv = require('dotenv')
-
-dotenv.config();
 
 let adminApp, db;
 
@@ -39,6 +36,5 @@ try {
   logger.error(`Erro ao inicializar Firebase: ${error.message}`, 'FIREBASE', { stack: error.stack });
   throw error;
 }
-
 
 module.exports = { admin, db };

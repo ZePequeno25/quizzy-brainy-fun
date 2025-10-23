@@ -6,10 +6,14 @@ const {
     getStudentCommentsHandler,
     addCommentResponseHandler
 } = require('../controllers/commentController');
+const authMiddleware = require('../middlewares/authMiddleware');
 
-router.post('/comments', addCommentHandler);
+// Apply authentication middleware to all routes in this router
+router.use(authMiddleware);
+
+router.post('/comments/add', addCommentHandler);
 router.get('/teacher-comments/:teacherId', getTeacherCommentsHandler);
 router.get('/student-comments/:studentId', getStudentCommentsHandler);
-router.post('/comment-response', addCommentResponseHandler);
+router.post('/comments-response', addCommentResponseHandler);
 
 module.exports = router;
