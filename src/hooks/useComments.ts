@@ -1,194 +1,69 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { apiFetch } from "@/lib/api";
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/api';
 
 interface Comment {
-  id: string;
-  questionId: string;
-  questionTheme: string;
-  questionText: string;
-  userId: string;
-  userName: string;
-  userType: 'aluno' | 'professor';
-  message: string;
-  createdAt: string;
-  responses?: CommentResponse[];
-}
-
-interface CommentResponse {
-  id: string;
   commentId: string;
   userId: string;
-  userName: string;
-  userType: 'aluno' | 'professor';
-  message: string;
+  userNome: string;
+  userType: string;
+  comment: string;
   createdAt: string;
 }
 
-export const useComments = () => {
-  const { user, getAuthToken } = useAuth();
-  const userId = user?.uid || 'guest';
-  
-  const [comments, setComments] = useState<Comment[]>(() => {
-    const saved = localStorage.getItem(`comments_${userId}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-  
+export const useComments = (questionId: string) => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchComments = useCallback(async () => {
+    console.log(`📡 [useComments] Carregando comentários de ${questionId}`);
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiFetch(`/comments/${questionId}`);
+      if (!response.ok) {
+        throw new Error(`Erro na API: ${response.status} - /comments/${questionId}`);
+      }
+      const data = await response.json();
+      setComments(data);
+    } catch (err: any) {
+      console.error(`❌ [useComments] ${err.message}`);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [questionId]);
+
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(`comments_${userId}`, JSON.stringify(comments));
+    if (questionId) {
+      fetchComments();
     }
-  }, [comments, userId, user]);
+  }, [fetchComments, questionId]);
 
-  // Adicionar comentário a um questionário
-  const addComment = async (questionId: string, questionTheme: string, questionText: string, message: string) => {
-    if (!user || !message.trim()) return { success: false };
-    
-    setLoading(true);
+  const postComment = async (comment: string, user: { uid: string; nomeCompleto: string; userType: string; }) => {
     try {
-      const token = getAuthToken();
-      const response = await apiFetch('/comments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          questionId,
-          questionTheme,
-          questionText,
-          userId: user.uid,
-          userName: user.nomeCompleto,
-          userType: user.userType,
-          message: message.trim()
-        })
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Comentário adicionado!",
-          description: "Seu comentário foi enviado com sucesso"
-        });
-        loadComments();
-        return { success: true };
-      } else {
-        throw new Error('Erro ao enviar comentário');
-      }
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao enviar comentário",
-        variant: "destructive"
-      });
-      return { success: false };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Responder a um comentário
-  const addResponse = async (commentId: string, message: string) => {
-    if (!user || !message.trim()) return { success: false };
-    
-    setLoading(true);
-    try {
-      const token = getAuthToken();
-      const response = await apiFetch('/comment-response', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          commentId,
-          userId: user.uid,
-          userName: user.nomeCompleto,
-          userType: user.userType,
-          message: message.trim()
-        })
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Resposta adicionada!",
-          description: "Sua resposta foi enviada com sucesso"
-        });
-        loadComments();
-        return { success: true };
-      } else {
-        throw new Error('Erro ao enviar resposta');
-      }
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao enviar resposta",
-        variant: "destructive"
-      });
-      return { success: false };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Carregar comentários (para alunos: seus comentários; para professores: comentários dos alunos vinculados)
-  const loadComments = async () => {
-    if (!user) {
-      console.error('❌ [useComments] Usuário não autenticado');
-      return;
-    }
-    
-    try {
-      const endpoint = user.userType === 'professor' 
-        ? `/teacher-comments/${user.uid}`
-        : `/student-comments/${user.uid}`;
-      console.log(`📡 [useComments] Carregando comentários de ${endpoint}`);
-      
-      const token = await getAuthToken();
-      console.log(`🔑 [useComments] Token JWT: ${token.substring(0, 10)}...`);
-      
-      const response = await apiFetch(endpoint, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await apiFetch(`/comments/${questionId}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            comment,
+            userId: user.uid,
+            userNome: user.nomeCompleto,
+            userType: user.userType,
+          }),
         }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const commentsArray = Array.isArray(data.comments) ? data.comments : [];
-        console.log(`✅ [useComments] ${commentsArray.length} comentários carregados`);
-        setComments(commentsArray);
-        localStorage.setItem(`comments_${userId}`, JSON.stringify(commentsArray));
-      } else {
-        console.error(`❌ [useComments] Erro na API: ${response.status} - ${endpoint}`);
-        toast({
-          title: "Erro",
-          description: `Falha ao carregar comentários: ${response.statusText}`,
-          variant: "destructive"
-        });
+      );
+
+      if (!response.ok) {
+        throw new Error('Falha ao postar comentário');
       }
-    } catch (error) {
-      console.error(`❌ [useComments] Erro ao carregar comentários: ${error.message}`);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar comentários",
-        variant: "destructive"
-      });
+
+      await fetchComments(); // Re-fetch comments to show the new one
+    } catch (err: any) {
+      console.error('❌ [useComments] Erro ao postar comentário:', err.message);
+      setError(err.message);
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      loadComments();
-    }
-  }, [user]);
-
-  return {
-    comments,
-    loading,
-    addComment,
-    addResponse,
-    loadComments
-  };
+  return { comments, loading, error, postComment, refetchComments: fetchComments };
 };
