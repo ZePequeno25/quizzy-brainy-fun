@@ -12,7 +12,7 @@
  * - Integração com backend de autenticação
  * 
  * NAVEGAÇÃO:
- * - Sucesso no login → redireciona para / (Index cuida do resto)
+ * - Sucesso no login → redireciona diretamente para /student ou /professor
  * - Link para cadastro → /register
  * - Link para recuperação → /forgot-password
  * 
@@ -52,13 +52,8 @@ const Login = () => {
     return value;
   };
 
-  /**
-   * HANDLER: Formatação de CPF durante digitação
-   * Aplica máscara automática: 000.000.000-00
-   */
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCPF(e.target.value);
-    console.log('⌨️ [LOGIN] CPF digitado:', { original: e.target.value, formatado: formatted });
     setCpf(formatted);
   };
 
@@ -69,20 +64,15 @@ const Login = () => {
    * 1. Valida se tipo de usuário foi selecionado
    * 2. Remove formatação do CPF (mantém apenas números)
    * 3. Chama função login do hook useAuth
-   * 4. Se sucesso: redireciona para / (Index faz roteamento final)
+   * 4. Se sucesso: redireciona para a página específica (/student ou /professor)
    * 5. Se erro: useAuth já mostra toast de erro
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('📝 [LOGIN] Formulário submetido', {
-      cpf: cpf.replace(/\D/g, ''),
-      userType,
-      temSenha: !!password
-    });
-    
     if (!userType) {
       console.warn('⚠️ [LOGIN] Tipo de usuário não selecionado');
+      // Idealmente, mostrar um toast/erro para o usuário aqui.
       return;
     }
 
@@ -92,8 +82,16 @@ const Login = () => {
     const result = await login(cpf.replace(/\D/g, ''), password, userType);
     
     if (result.success) {
-      console.log('✅ [LOGIN] Login bem-sucedido! Redirecionando para página inicial...');
-      navigate('/');
+      console.log(`✅ [LOGIN] Login bem-sucedido como ${userType}! Redirecionando...`);
+      // Redireciona diretamente para a página correta, eliminando a condição de corrida
+      if (userType === 'professor') {
+        navigate('/professor');
+      } else if (userType === 'aluno') {
+        navigate('/student');
+      } else {
+        // Fallback, embora a validação acima deva impedir isso
+        navigate('/');
+      }
     } else {
       console.error('❌ [LOGIN] Falha no login:', result.error);
     }
@@ -160,7 +158,7 @@ const Login = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-purple-600 hover:bg-purple-700"
-                  disabled={loading}
+                  disabled={loading || !userType}
                 >
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
@@ -168,20 +166,14 @@ const Login = () => {
                 <div className="text-center space-y-2">
                   <Button 
                     variant="link" 
-                    onClick={() => {
-                      console.log('🔗 [LOGIN] Navegando para página de cadastro');
-                      navigate('/register');
-                    }}
+                    onClick={() => navigate('/register')}
                     className="text-purple-600"
                   >
                     Não tem conta? Cadastre-se
                   </Button>
                   <Button 
                     variant="link" 
-                    onClick={() => {
-                      console.log('🔗 [LOGIN] Navegando para recuperação de senha');
-                      navigate('/forgot-password');
-                    }}
+                    onClick={() => navigate('/forgot-password')}
                     className="text-purple-600"
                   >
                     Esqueci minha senha
