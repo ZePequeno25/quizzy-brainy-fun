@@ -1,4 +1,4 @@
-primeiro precisa copiar meu git: https://github.com/ZePequeno25/Aprender-Em-Movimento-JS.git depois de uma conta no render: https://dashboard.render.com depois pressione add new -> web service voce loga com a conta do git e escolhe o projeto que foi copiado ou cole o link publico do repositório e clica em confirmar depois voce so vai precisar mudar Build Command para npm i e escolha o plano free logo abaixo tem as variáveis de ambiente onde vai ser necessário essas
+primeiro precisa copiar meu git: https://github.com/ZePequeno25/Aprender-Em-Movimento-JS.git depois precisa de uma conta no render: https://dashboard.render.com depois pressione add new -> web service voce loga com a conta do git e escolhe o projeto que foi copiado ou cole o link publico do repositório e clica em confirmar depois voce so vai precisar mudar Build Command para npm i e escolha o plano free logo abaixo tem as variáveis de ambiente onde vai ser necessário essas
 
 PORT FIREBASE_SERVICE_ACCOUNT ALLOWED_ORIGINS=http://127.0.0.1:5000,https://77c82926-cc52-4e97-9f3b-585910fae583.lovableproject.com,https://9000-firebase-saber-em-movimento-1751421470956.cluster-4xpux6pqdzhrktbhjf2cumyqtg.cloudworkstations.dev,https://nifty-pursuit-382200.web.app,https://nifty-pursuit-382200.firebaseapp.com,https://aprender-em-movimento.onrender.com,http://localhost:3000,http://127.0.0.1:3000,http://localhost:1000,http://190.115.208.54:5050,https://id-preview--77c82926-cc52-4e97-9f3b-585910fae583.lovable.app
 
@@ -13,4 +13,5 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
 
