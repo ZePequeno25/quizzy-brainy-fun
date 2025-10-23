@@ -1,6 +1,5 @@
 const { admin } = require('../utils/firebase');
 const logger = require('../utils/logger');
-const db = admin.firestore(); // FIX: Initialize Firestore db instance
 
 const {isProfessor, isStudent, getUserName} = require('../models/userModel');
 const {createTeacherCode, getTeacherCode, useTeacherCode} = require('../models/teacherCodeModel');
