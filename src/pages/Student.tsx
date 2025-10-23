@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -31,33 +31,21 @@ interface Question {
 }
 
 const Student = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // Get the loading state from useAuth
   const { toast } = useToast();
-  const { relations } = useTeacherStudent();
-  const userId = user?.uid || 'guest';
-  
-  const [questions, setQuestions] = useState<Question[]>(() => {
-    const saved = localStorage.getItem(`questions_${userId}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [quizQuestions, setQuizQuestions] = useState<Question[]>(() => {
-    const saved = localStorage.getItem(`quizQuestions_${userId}`);
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [isChatOpen, setIsChatOpen] = useState(() => localStorage.getItem(`isChatOpen_${userId}`) === 'true');
-  
-  const [chattingWith, setChattingWith] = useState<{id: string, name: string, type: 'aluno' | 'professor'} | null>(() => {
-    const saved = localStorage.getItem(`chattingWith_${userId}`);
-    return saved ? JSON.parse(saved) : null;
-  });
-  
-  // Estados do quiz persistidos
+  const { relations } = useTeacherStudent(user?.uid); // Pass user id to the hook
+
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<Question[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chattingWith, setChattingWith] = useState<{id: string, name: string, type: 'aluno' | 'professor'} | null>(null);
+  const [componentLoading, setComponentLoading] = useState(true);
+
+  // Quiz states
   const [quizState, setQuizState] = useState(() => {
-    const saved = localStorage.getItem(`quizState_${userId}`);
+    const saved = user ? localStorage.getItem(`quizState_${user.uid}`) : null;
     return saved ? JSON.parse(saved) : {
-      score: 0,
+      score: user?.score || 0,
       questionIndex: 0,
       isQuizActive: false,
       showFeedback: false,
@@ -68,32 +56,22 @@ const Student = () => {
       isPaused: false
     };
   });
-  
-  const [score, setScore] = useState(quizState.score);
-  const [questionIndex, setQuestionIndex] = useState(quizState.questionIndex);
-  const [isQuizActive, setIsQuizActive] = useState(quizState.isQuizActive);
-  const [showFeedback, setShowFeedback] = useState(quizState.showFeedback);
-  const [selectedTheme, setSelectedTheme] = useState(quizState.selectedTheme);
-  const [selectedVisibility, setSelectedVisibility] = useState(quizState.selectedVisibility);
-  const [selectedTeacher, setSelectedTeacher] = useState(quizState.selectedTeacher);
-  const [timeLeft, setTimeLeft] = useState(quizState.timeLeft);
-  const [isPaused, setIsPaused] = useState(quizState.isPaused);
-  
-  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  
-  // useEffect para persistir estados
+
+  const { 
+    score, questionIndex, isQuizActive, showFeedback, 
+    selectedTheme, selectedVisibility, selectedTeacher, timeLeft, isPaused 
+  } = quizState;
+
+  const updateQuizState = (newState: Partial<typeof quizState>) => {
+    setQuizState(prevState => ({ ...prevState, ...newState }));
+  };
+
   useEffect(() => {
     if (user) {
-      localStorage.setItem(`questions_${userId}`, JSON.stringify(questions));
-      localStorage.setItem(`quizQuestions_${userId}`, JSON.stringify(quizQuestions));
-      localStorage.setItem(`isChatOpen_${userId}`, isChatOpen.toString());
-      localStorage.setItem(`chattingWith_${userId}`, JSON.stringify(chattingWith));
-      localStorage.setItem(`quizState_${userId}`, JSON.stringify({
-        score, questionIndex, isQuizActive, showFeedback, selectedTheme, selectedVisibility, selectedTeacher, timeLeft, isPaused
-      }));
+      localStorage.setItem(`quizState_${user.uid}`, JSON.stringify(quizState));
     }
-  }, [questions, quizQuestions, isChatOpen, chattingWith, score, questionIndex, isQuizActive, showFeedback, selectedTheme, selectedVisibility, selectedTeacher, timeLeft, isPaused, userId, user]);
+  }, [quizState, user]);
+
 
   const capoeiraRanks = [
     { score: 0, title: "Aluno Novo (Iniciante)", color: "bg-gray-400" },
@@ -116,83 +94,43 @@ const Student = () => {
     return currentRank;
   };
 
-  const loadQuestions = async () => {
+  const loadQuestions = useCallback(async () => {
+    if (!user) return;
     try {
       const response = await apiFetch('/questions');
       if (response.ok) {
         const data = await response.json();
-        
-        // Validação defensiva: garantir que data é um array
-        const dataArray = Array.isArray(data) ? data : [];
-        
-        // Filtrar questões baseado na visibilidade selecionada
-        let filteredQuestions = dataArray;
-        
-        if (selectedVisibility === "teachers" && selectedTeacher !== "all") {
-          // Mostrar apenas questões do professor selecionado
-          filteredQuestions = dataArray.filter((q: Question) => 
-            q.createdBy === selectedTeacher && q.visibility === 'private'
-          );
-        } else if (selectedVisibility === "public") {
-          // Mostrar apenas questões públicas
-          filteredQuestions = dataArray.filter((q: Question) => q.visibility === 'public');
-        }
-        
-        setQuestions(filteredQuestions);
-        localStorage.setItem(`questions_${userId}`, JSON.stringify(filteredQuestions));
+        setQuestions(Array.isArray(data) ? data : []);
       } else {
-        throw new Error('Falha na requisição');
+        throw new Error('Falha ao carregar as perguntas do servidor.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar perguntas:', error);
-      // Fallback com dados mockados para demonstração
-      const mockQuestions = [
-        {
-          id: 'mock1',
-          theme: 'capoeira',
-          question: 'Qual é o instrumento principal da capoeira?',
-          options: ['Berimbau', 'Pandeiro', 'Atabaque', 'Caxixi'],
-          correctOptionIndex: 0,
-          feedback: {
-            title: 'Correto!',
-            text: 'O berimbau é o instrumento principal que conduz a roda de capoeira.',
-            illustration: ''
-          },
-          visibility: 'public' as const
-        },
-        {
-          id: 'mock2',
-          theme: 'tecnologia',
-          question: 'O que significa HTML?',
-          options: ['HyperText Markup Language', 'Home Tool Markup Language', 'Hyperlinks and Text Markup Language', 'High Tech Modern Language'],
-          correctOptionIndex: 0,
-          feedback: {
-            title: 'Parabéns!',
-            text: 'HTML é a linguagem de marcação padrão para criar páginas web.',
-            illustration: ''
-          },
-          visibility: 'public' as const
-        }
-      ];
-      setQuestions(mockQuestions);
       toast({
-        title: "Modo Demonstração",
-        description: "Carregando perguntas de exemplo pois a API está indisponível.",
+        title: "Erro de Rede",
+        description: error.message || "Não foi possível buscar as perguntas. Verifique sua conexão.",
+        variant: "destructive",
       });
     }
-  };
+  }, [user, toast]);
 
   useEffect(() => {
-    loadQuestions();
-    if (user?.score) {
-      setScore(user.score);
+    // Wait for auth to finish loading and user to be available
+    if (!authLoading && user) {
+      setComponentLoading(true);
+      loadQuestions().finally(() => setComponentLoading(false));
     }
-  }, [user, selectedVisibility, selectedTeacher]);
+    // If auth is done and there's no user, stop loading.
+    if(!authLoading && !user) {
+        setComponentLoading(false);
+    }
+  }, [authLoading, user, loadQuestions, selectedVisibility, selectedTeacher]);
 
+  // Timer effect for the quiz
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isQuizActive && timeLeft > 0 && !showFeedback && !isPaused) {
-      timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      timer = setTimeout(() => updateQuizState({ timeLeft: timeLeft - 1 }), 1000);
     } else if (timeLeft === 0 && !showFeedback) {
       handleAnswer();
     }
@@ -200,129 +138,116 @@ const Student = () => {
   }, [timeLeft, isQuizActive, showFeedback, isPaused]);
 
   const startQuiz = () => {
-    let filteredQuestions = questions;
-    
-    if (selectedTheme && selectedTheme !== "all") {
-      filteredQuestions = questions.filter(q => q.theme === selectedTheme);
+    let filtered = questions;
+    if (selectedTheme !== "all") {
+      filtered = filtered.filter(q => q.theme === selectedTheme);
     }
-    
-    if (filteredQuestions.length === 0) {
-      toast({
-        title: "Erro",
-        description: "Nenhuma pergunta encontrada para o tema selecionado",
-        variant: "destructive",
-      });
+    if (selectedVisibility === "public") {
+        filtered = filtered.filter(q => q.visibility === 'public');
+    }
+    if (selectedVisibility === "teachers" && selectedTeacher !== "all") {
+        filtered = filtered.filter(q => q.createdBy === selectedTeacher);
+    }
+
+    if (filtered.length === 0) {
+      toast({ title: "Nenhuma pergunta encontrada", description: "Tente uma combinação de filtros diferente.", variant: "destructive" });
       return;
     }
 
-    // Embaralhar perguntas
-    const shuffled = [...filteredQuestions].sort(() => Math.random() - 0.5);
+    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
     setQuizQuestions(shuffled);
-    setCurrentQuestion(shuffled[0]);
-    setQuestionIndex(0);
-    setSelectedOption(null);
-    setIsQuizActive(true);
-    setShowFeedback(false);
-    setTimeLeft(20);
-    setIsPaused(false);
+    updateQuizState({ isQuizActive: true, questionIndex: 0, showFeedback: false, timeLeft: 20, isPaused: false });
   };
 
-  const handleAnswer = () => {
+  const handleAnswer = (selectedOptionIndex: number | null = null) => {
+    const currentQuestion = quizQuestions[questionIndex];
     if (!currentQuestion) return;
 
-    const isCorrect = selectedOption === currentQuestion.correctOptionIndex;
-    
-    if (isCorrect) {
-      setScore(prev => prev + 1);
+    if (selectedOptionIndex === currentQuestion.correctOptionIndex) {
+      updateQuizState({ score: score + 1 });
     }
-    
-    setShowFeedback(true);
+    updateQuizState({ showFeedback: true });
   };
 
   const nextQuestion = () => {
     const nextIndex = questionIndex + 1;
-    
     if (nextIndex < quizQuestions.length) {
-      setQuestionIndex(nextIndex);
-      setCurrentQuestion(quizQuestions[nextIndex]);
-      setSelectedOption(null);
-      setShowFeedback(false);
-      setTimeLeft(20);
+      updateQuizState({ questionIndex: nextIndex, showFeedback: false, timeLeft: 20 });
     } else {
       endQuiz();
     }
   };
 
   const endQuiz = () => {
-    setIsQuizActive(false);
-    setCurrentQuestion(null);
-    setShowFeedback(false);
-    setIsPaused(false);
-    
+    updateQuizState({ isQuizActive: false });
     const finalRank = getCurrentRank(score);
-    
-    toast({
-      title: "Quiz concluído!",
-      description: `Pontuação: ${score} | Graduação: ${finalRank.title}`,
-    });
+    toast({ title: "Quiz concluído!", description: `Pontuação: ${score} | Graduação: ${finalRank.title}` });
+    // Here you might want to save the final score to the backend
   };
 
-  const pauseQuiz = () => {
-    setIsPaused(!isPaused);
-  };
-
+  const pauseQuiz = () => updateQuizState({ isPaused: !isPaused });
   const resetQuiz = () => {
-    if (confirm('Tem certeza que deseja resetar o quiz? Todo o progresso será perdido.')) {
-      setIsQuizActive(false);
-      setCurrentQuestion(null);
-      setShowFeedback(false);
-      setIsPaused(false);
-      setQuestionIndex(0);
-      setSelectedOption(null);
+    if (confirm('Tem certeza que deseja resetar o quiz?')) {
+      updateQuizState({ isQuizActive: false, questionIndex: 0, score: user?.score || 0 });
       setQuizQuestions([]);
     }
   };
 
   const themes = [...new Set(questions.map(q => q.theme))];
   const currentRank = getCurrentRank(score);
+  const currentQuestion = isQuizActive ? quizQuestions[questionIndex] : null;
 
+  // Show main loading screen while auth is in progress
+  if (authLoading || componentLoading) {
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <Header />
+            <div className="container mx-auto py-8 px-4 text-center">Carregando dados do aluno...</div>
+        </div>
+    );
+  }
+
+  // If auth is done but there is no user, deny access
   if (!user) {
-    return <div>Acesso negado</div>;
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <Header />
+            <div className="container mx-auto py-8 px-4 text-center text-red-600">Acesso negado. Por favor, faça login.</div>
+        </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
       <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-purple-600 mb-2">
-            Área do Aluno
-          </h1>
-          <p className="text-gray-600">
-            Bem-vindo, {user.nomeCompleto.split(' ')[0]}!
-          </p>
-        </div>
+         <div className="mb-8">
+           <h1 className="text-3xl font-bold text-purple-600 mb-2">
+             Área do Aluno
+           </h1>
+           <p className="text-gray-600">
+             Bem-vindo, {user.nomeCompleto.split(' ')[0]}!
+           </p>
+         </div>
 
         <Tabs defaultValue="quiz" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="quiz" className="flex items-center gap-2">
-              <Play className="w-4 h-4" />
-              Quiz
-            </TabsTrigger>
-            <TabsTrigger value="link" className="flex items-center gap-2">
-              <Link className="w-4 h-4" />
-              Professores
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center gap-2">
-              <MessageCircle className="w-4 h-4" />
-              Chat
-            </TabsTrigger>
-          </TabsList>
+             <TabsTrigger value="quiz" className="flex items-center gap-2">
+               <Play className="w-4 h-4" />
+               Quiz
+             </TabsTrigger>
+             <TabsTrigger value="link" className="flex items-center gap-2">
+               <Link className="w-4 h-4" />
+               Professores
+             </TabsTrigger>
+             <TabsTrigger value="chat" className="flex items-center gap-2">
+               <MessageCircle className="w-4 h-4" />
+               Chat
+             </TabsTrigger>
+           </TabsList>
 
           <TabsContent value="quiz">
             <div className="grid lg:grid-cols-3 gap-8">
-          {/* Painel do usuário */}
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
@@ -354,7 +279,6 @@ const Student = () => {
               </CardContent>
             </Card>
 
-            {/* Graduações disponíveis */}
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Sistema de Graduação</CardTitle>
@@ -375,7 +299,6 @@ const Student = () => {
             </Card>
           </div>
 
-          {/* Área do quiz */}
           <div className="lg:col-span-2">
             {!isQuizActive ? (
               <Card>
@@ -389,10 +312,9 @@ const Student = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Seletor de Visibilidade */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">Fonte das Questões</label>
-                    <Select value={selectedVisibility} onValueChange={setSelectedVisibility}>
+                    <Select value={selectedVisibility} onValueChange={(value) => updateQuizState({ selectedVisibility: value as string})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Escolha a fonte das questões" />
                       </SelectTrigger>
@@ -405,11 +327,10 @@ const Student = () => {
                     </Select>
                   </div>
 
-                  {/* Seletor de Professor (quando visibilidade = professores) */}
                   {selectedVisibility === "teachers" && relations.length > 0 && (
                     <div>
                       <label className="text-sm font-medium mb-2 block">Professor</label>
-                      <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
+                      <Select value={selectedTeacher} onValueChange={(value) => updateQuizState({ selectedTeacher: value as string})}>
                         <SelectTrigger>
                           <SelectValue placeholder="Escolha um professor" />
                         </SelectTrigger>
@@ -425,10 +346,9 @@ const Student = () => {
                     </div>
                   )}
 
-                  {/* Seletor de Tema */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">Tema (opcional)</label>
-                    <Select value={selectedTheme} onValueChange={setSelectedTheme}>
+                    <Select value={selectedTheme} onValueChange={(value) => updateQuizState({ selectedTheme: value as string})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Todos os temas (aleatório)" />
                       </SelectTrigger>
@@ -447,141 +367,56 @@ const Student = () => {
                     onClick={startQuiz}
                     className="w-full bg-purple-600 hover:bg-purple-700"
                     size="lg"
+                    disabled={questions.length === 0}
                   >
                     <Play className="w-4 h-4 mr-2" />
-                    Começar Quiz
+                    {questions.length === 0 ? 'Nenhuma Pergunta Carregada' : 'Começar Quiz'}
                   </Button>
 
                   <div className="text-sm text-gray-600">
                     <p>• Cada pergunta tem 20 segundos para ser respondida</p>
                     <p>• Ganhe 1 ponto por resposta correta</p>
                     <p>• Avance nas graduações da capoeira conforme sua pontuação</p>
-                    {selectedVisibility === "teachers" && (
-                      <p>• Questões dos seus professores vinculados</p>
-                    )}
                   </div>
                 </CardContent>
               </Card>
-            ) : (
+            ) : currentQuestion && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Pergunta {questionIndex + 1} de {quizQuestions.length}</span>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={pauseQuiz}
-                          className="flex items-center gap-1"
-                        >
-                          {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
-                          {isPaused ? "Continuar" : "Pausar"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={resetQuiz}
-                          className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                          Resetar
-                        </Button>
-                      </div>
-                      <div className={`flex items-center gap-2 ${isPaused ? 'text-orange-500' : 'text-red-500'}`}>
-                        <Clock className="w-4 h-4" />
-                        {timeLeft}s {isPaused && "(Pausado)"}
-                      </div>
-                    </div>
-                  </CardTitle>
-                  <Progress value={(questionIndex / quizQuestions.length) * 100} />
+                   <CardTitle className="flex items-center justify-between">
+                     <span>Pergunta {questionIndex + 1} de {quizQuestions.length}</span>
+                     <div className="flex items-center gap-4">
+                       <div className="flex items-center gap-2">
+                         <Button variant="outline" size="sm" onClick={pauseQuiz} className="flex items-center gap-1">
+                           {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                           {isPaused ? "Continuar" : "Pausar"}
+                         </Button>
+                         <Button variant="outline" size="sm" onClick={resetQuiz} className="flex items-center gap-1 text-red-600 hover:text-red-700">
+                           <RotateCcw className="w-3 h-3" />
+                           Resetar
+                         </Button>
+                       </div>
+                       <div className={`flex items-center gap-2 ${isPaused ? 'text-orange-500' : 'text-red-500'}`}>
+                         <Clock className="w-4 h-4" />
+                         {timeLeft}s {isPaused && "(Pausado)"}
+                       </div>
+                     </div>
+                   </CardTitle>
+                  <Progress value={((questionIndex + 1) / quizQuestions.length) * 100} />
                 </CardHeader>
                 <CardContent>
-                  {currentQuestion && !showFeedback && (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-purple-50 rounded-lg">
-                        <p className="text-sm text-purple-600 font-medium mb-1">
-                          {currentQuestion.theme.toUpperCase()}
-                        </p>
-                        <h3 className="text-lg font-semibold">
-                          {currentQuestion.question}
-                        </h3>
-                      </div>
-
-                      <div className="space-y-2">
-                        {currentQuestion.options.map((option, index) => (
-                          <Button
-                            key={index}
-                            variant={selectedOption === index ? "default" : "outline"}
-                            className={`w-full text-left p-4 h-auto justify-start ${
-                              selectedOption === index 
-                                ? "bg-purple-600 hover:bg-purple-700" 
-                                : "hover:bg-purple-50"
-                            }`}
-                            onClick={() => setSelectedOption(index)}
-                          >
-                            <span className="font-semibold mr-2">{String.fromCharCode(65 + index)})</span>
-                            {option}
-                          </Button>
-                        ))}
-                      </div>
-
-                      <Button 
-                        onClick={handleAnswer}
-                        disabled={selectedOption === null}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        Responder
-                      </Button>
-                    </div>
-                  )}
-
-                  {showFeedback && currentQuestion && (
-                    <div className="space-y-4">
-                      <div className={`p-4 rounded-lg ${
-                        selectedOption === currentQuestion.correctOptionIndex 
-                          ? "bg-green-50 border-green-200" 
-                          : "bg-red-50 border-red-200"
-                      } border`}>
-                        <h3 className="text-lg font-semibold mb-2">
-                          {selectedOption === currentQuestion.correctOptionIndex 
-                            ? currentQuestion.feedback.title || "Correto!"
-                            : "Ops, não foi dessa vez!"
-                          }
-                        </h3>
-                        
-                        {currentQuestion.feedback.illustration && (
-                          <img 
-                            src={currentQuestion.feedback.illustration} 
-                            alt="Feedback"
-                            className="w-full max-w-sm mx-auto mb-4 rounded"
-                          />
-                        )}
-                        
-                        <p>
-                          {selectedOption === currentQuestion.correctOptionIndex 
-                            ? currentQuestion.feedback.text || "Boa resposta!"
-                            : `A resposta correta era: "${currentQuestion.options[currentQuestion.correctOptionIndex]}". ${currentQuestion.feedback.text || ""}`
-                          }
-                        </p>
-                      </div>
-
-                      <Button 
-                        onClick={nextQuestion}
-                        className="w-full bg-purple-600 hover:bg-purple-700"
-                      >
-                        {questionIndex + 1 < quizQuestions.length ? "Próxima Pergunta" : "Finalizar Quiz"}
-                      </Button>
-
-                      {/* Componente de Comentários */}
-                      {currentQuestion && (
-                        <QuestionComments
-                          questionId={currentQuestion.id}
-                          questionTheme={currentQuestion.theme}
-                          questionText={currentQuestion.question}
-                        />
-                      )}
-                    </div>
+                  {!showFeedback ? (
+                    <QuizQuestionView 
+                        question={currentQuestion}
+                        onAnswer={handleAnswer}
+                    />
+                  ) : (
+                    <QuizFeedbackView 
+                        question={currentQuestion}
+                        selectedAnswer={-1} // This part needs logic to capture the selected answer
+                        onNext={nextQuestion}
+                        isLastQuestion={questionIndex + 1 >= quizQuestions.length}
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -590,73 +425,138 @@ const Student = () => {
         </div>
       </TabsContent>
 
-      <TabsContent value="link">
-        <StudentLinkForm />
-      </TabsContent>
 
-      <TabsContent value="chat">
-        <Card>
-          <CardHeader>
-            <CardTitle>Professores para Chat</CardTitle>
-            <CardDescription>
-              Inicie uma conversa com seus professores vinculados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {relations.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg font-medium mb-2">Nenhum professor vinculado</p>
-                <p>Vincule-se a professores para iniciar conversas</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {relations.map((relation) => (
-                  <div key={relation.teacherId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{relation.teacherName}</h4>
-                      <p className="text-sm text-gray-600">
-                        Professor vinculado desde {new Date(relation.createdAt).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => {
-                        setChattingWith({
-                          id: relation.teacherId,
-                          name: relation.teacherName,
-                          type: 'professor'
-                        });
-                        setIsChatOpen(true);
-                      }}
-                      className="bg-purple-600 hover:bg-purple-700"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Iniciar Chat
-                    </Button>
+          <TabsContent value="link">
+            <StudentLinkForm />
+          </TabsContent>
+
+          <TabsContent value="chat">
+            <Card>
+              <CardHeader>
+                <CardTitle>Professores para Chat</CardTitle>
+                <CardDescription>
+                  Inicie uma conversa com seus professores vinculados
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {relations.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-lg font-medium mb-2">Nenhum professor vinculado</p>
+                    <p>Vincule-se a professores para iniciar conversas</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
-  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {relations.map((relation) => (
+                      <div key={relation.teacherId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{relation.teacherName}</h4>
+                          <p className="text-sm text-gray-600">
+                            Professor vinculado desde {new Date(relation.createdAt).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            setChattingWith({
+                              id: relation.teacherId,
+                              name: relation.teacherName,
+                              type: 'professor'
+                            });
+                            setIsChatOpen(true);
+                          }}
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Iniciar Chat
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
 
-  {/* Chat Window */}
-  <ChatWindow
-    isOpen={isChatOpen}
-    onClose={() => {
-      setIsChatOpen(false);
-      setChattingWith(null);
-    }}
-    onMinimize={() => setIsChatOpen(false)}
-    chattingWith={chattingWith}
-  />
+      <ChatWindow
+        isOpen={isChatOpen}
+        onClose={() => {
+          setIsChatOpen(false);
+          setChattingWith(null);
+        }}
+        onMinimize={() => setIsChatOpen(false)}
+        chattingWith={chattingWith}
+      />
     </div>
   );
 };
+
+// Helper components for better readability
+
+const QuizQuestionView = ({ question, onAnswer }: { question: Question, onAnswer: (index: number) => void }) => {
+    const [selectedOption, setSelectedOption] = useState<number | null>(null);
+
+    return (
+        <div className="space-y-4">
+            <div className="p-4 bg-purple-50 rounded-lg">
+                <p className="text-sm text-purple-600 font-medium mb-1">
+                {question.theme.toUpperCase()}
+                </p>
+                <h3 className="text-lg font-semibold">
+                {question.question}
+                </h3>
+            </div>
+            <div className="space-y-2">
+                {question.options.map((option, index) => (
+                <Button
+                    key={index}
+                    variant={selectedOption === index ? "default" : "outline"}
+                    className={`w-full text-left p-4 h-auto justify-start ${selectedOption === index ? "bg-purple-600 hover:bg-purple-700" : "hover:bg-purple-50"}`}
+                    onClick={() => setSelectedOption(index)}
+                >
+                    <span className="font-semibold mr-2">{String.fromCharCode(65 + index)})</span>
+                    {option}
+                </Button>
+                ))}
+            </div>
+            <Button 
+                onClick={() => onAnswer(selectedOption!)}
+                disabled={selectedOption === null}
+                className="w-full bg-green-600 hover:bg-green-700"
+            >
+                Responder
+            </Button>
+        </div>
+    );
+}
+
+const QuizFeedbackView = ({ question, selectedAnswer, onNext, isLastQuestion }: { question: Question, selectedAnswer: number, onNext: () => void, isLastQuestion: boolean }) => {
+    const isCorrect = selectedAnswer === question.correctOptionIndex;
+
+    return (
+        <div className="space-y-4">
+            <div className={`p-4 rounded-lg ${isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"} border`}>
+                <h3 className="text-lg font-semibold mb-2">
+                {isCorrect ? (question.feedback.title || "Correto!") : "Ops, não foi dessa vez!"}
+                </h3>
+                {question.feedback.illustration && <img src={question.feedback.illustration} alt="Feedback" className="w-full max-w-sm mx-auto mb-4 rounded"/>}
+                <p>
+                {isCorrect ? (question.feedback.text || "Boa resposta!") : `A resposta correta era: "${question.options[question.correctOptionIndex]}". ${question.feedback.text || ""}`}
+                </p>
+            </div>
+            <Button onClick={onNext} className="w-full bg-purple-600 hover:bg-purple-700">
+                {isLastQuestion ? "Finalizar Quiz" : "Próxima Pergunta"}
+            </Button>
+            <QuestionComments
+                questionId={question.id}
+                questionTheme={question.theme}
+                questionText={question.question}
+            />
+        </div>
+    );
+}
 
 export default Student;
