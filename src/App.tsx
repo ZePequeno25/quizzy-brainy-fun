@@ -11,6 +11,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Student from "./pages/Student";
 import Professor from "./pages/Professor";
 import NotFound from "./pages/NotFound";
+import AuthLayout from "./components/AuthLayout"; // Import the new layout
 
 const queryClient = new QueryClient();
 
@@ -21,14 +22,20 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/student" element={<Student />} />
-          <Route path="/professor" element={<Professor />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+
+          {/* Protected Routes: All routes within this element will be protected by AuthLayout */}
+          <Route element={<AuthLayout />}>
+            <Route path="/student" element={<Student />} />
+            <Route path="/professor" element={<Professor />} />
+          </Route>
+
+          {/* Catch-all Not Found Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
