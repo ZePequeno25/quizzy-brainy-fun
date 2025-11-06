@@ -223,6 +223,76 @@ export const useAuth = () => {
     }
   };
 
+  const registerWithGoogle = async (userType: 'aluno' | 'professor') => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+
+      if (!firebaseUser) {
+        throw new Error('Falha na autenticação com Google');
+      }
+
+      // Sincronizar com a API backend
+      const idToken = await firebaseUser.getIdToken();
+      
+      const response = await apiFetch('/google-auth', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ 
+          userType,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          uid: firebaseUser.uid,
+          isRegistration: true
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao criar conta com Google');
+      }
+
+      const data = await response.json();
+      
+      const userData = {
+        uid: firebaseUser.uid,
+        email: data.email || firebaseUser.email,
+        nomeCompleto: data.nomeCompleto || firebaseUser.displayName,
+        userType: data.userType || userType,
+        cpf: data.cpf || '',
+      };
+
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      setUser(userData);
+
+      toast({
+        title: 'Cadastro realizado com sucesso!',
+        description: `Bem-vindo, ${userData.nomeCompleto}`,
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      navigate(userType === 'aluno' ? '/student' : '/professor');
+      return { success: true };
+
+    } catch (error: any) {
+      console.error('❌ [useAuth] Erro no cadastro com Google:', error.message);
+      
+      // Se houver erro, fazer logout do Firebase
+      await auth.signOut();
+      
+      toast({
+        title: 'Erro no cadastro com Google',
+        description: error.message || 'Erro ao tentar cadastrar com Google',
+        variant: 'destructive',
+      });
+      return { success: false, error: error.message };
+    }
+  };
+
   const getAuthToken = async () => {
     const currentUser = auth.currentUser;
     if (currentUser) {
@@ -237,6 +307,7 @@ export const useAuth = () => {
     login,
     loginWithGoogle,
     register,
+    registerWithGoogle,
     logout,
     getAuthToken
   };
