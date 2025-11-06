@@ -31,16 +31,9 @@ export const useChat = (partnerId: string | null) => {
 
     // This query is complex. It needs to find messages where:
     // (sender is me AND receiver is them) OR (sender is them AND receiver is me)
+    // Note: Firestore doesn't support complex OR queries, so we filter client-side
     const messagesQuery = query(
       collection(db, 'chats'),
-      or(
-        where('senderId', '==', user.uid),
-        where('receiverId', '==', partnerId)
-      ),
-      or(
-        where('senderId', '==', partnerId),
-        where('receiverId', '==', user.uid)
-      ),
       orderBy('createdAt', 'asc')
     );
     
