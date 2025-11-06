@@ -95,6 +95,8 @@ export const useAuth = () => {
           description: `Bem-vindo, ${userData.nomeCompleto}`,
         });
 
+        // Aguarda o Firebase processar completamente antes de navegar
+        await new Promise(resolve => setTimeout(resolve, 100));
         navigate(userType === 'aluno' ? '/student' : '/professor');
         return { success: true };
       }

@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 
@@ -39,6 +40,7 @@ const Login = () => {
   const [userType, setUserType] = useState<'aluno' | 'professor' | ''>("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const formatCPF = (value: string) => {
@@ -72,7 +74,11 @@ const Login = () => {
     
     if (!userType) {
       console.warn('⚠️ [LOGIN] Tipo de usuário não selecionado');
-      // Idealmente, mostrar um toast/erro para o usuário aqui.
+      toast({
+        title: 'Erro no login',
+        description: 'Por favor, selecione o tipo de usuário',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -83,20 +89,11 @@ const Login = () => {
     
     if (result.success) {
       console.log(`✅ [LOGIN] Login bem-sucedido como ${userType}! Redirecionando...`);
-      // Redireciona diretamente para a página correta, eliminando a condição de corrida
-      if (userType === 'professor') {
-        navigate('/professor');
-      } else if (userType === 'aluno') {
-        navigate('/student');
-      } else {
-        // Fallback, embora a validação acima deva impedir isso
-        navigate('/');
-      }
+      // O navigate já é feito dentro do hook useAuth após o Firebase confirmar
     } else {
       console.error('❌ [LOGIN] Falha no login:', result.error);
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
