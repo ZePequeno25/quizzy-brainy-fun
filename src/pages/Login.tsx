@@ -97,14 +97,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-4">
+    <div className="min-h-screen bg-background pb-4">
       <Header />
       
       <div className="container mx-auto py-4 sm:py-8 px-4">
         <div className="max-w-md mx-auto">
           <Card>
             <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="text-xl sm:text-2xl text-center text-purple-600">
+              <CardTitle className="text-xl sm:text-2xl text-center text-primary">
                 Login
               </CardTitle>
               <CardDescription className="text-center text-sm">
@@ -154,7 +154,7 @@ const Login = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  className="w-full"
                   disabled={loading || !userType}
                 >
                   {loading ? "Entrando..." : "Entrar"}
@@ -164,14 +164,14 @@ const Login = () => {
                   <Button 
                     variant="link" 
                     onClick={() => navigate('/register')}
-                    className="text-purple-600"
+                    className="text-primary"
                   >
                     Não tem conta? Cadastre-se
                   </Button>
                   <Button 
                     variant="link" 
                     onClick={() => navigate('/forgot-password')}
-                    className="text-purple-600"
+                    className="text-primary"
                   >
                     Esqueci minha senha
                   </Button>

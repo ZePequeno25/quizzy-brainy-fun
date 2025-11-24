@@ -121,14 +121,14 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-4">
+    <div className="min-h-screen bg-background pb-4">
       <Header />
       
       <div className="container mx-auto py-4 sm:py-8 px-4">
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="text-xl sm:text-2xl text-center text-purple-600">
+              <CardTitle className="text-xl sm:text-2xl text-center text-primary">
                 Cadastro
               </CardTitle>
               <CardDescription className="text-center text-sm">
@@ -221,7 +221,7 @@ const Register = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  className="w-full"
                   disabled={loading}
                 >
                   {loading ? "Cadastrando..." : "Criar Conta"}
@@ -231,7 +231,7 @@ const Register = () => {
                   <Button 
                     variant="link" 
                     onClick={() => navigate('/login')}
-                    className="text-purple-600"
+                    className="text-primary"
                   >
                     Já tem conta? Faça login
                   </Button>
