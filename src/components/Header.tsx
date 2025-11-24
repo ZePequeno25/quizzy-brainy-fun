@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { AccessibilityButton } from "@/components/AccessibilityButton";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LogOut, Home, BookOpen, Menu, X } from "lucide-react";
+import { LogOut, Home, Menu } from "lucide-react";
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -53,14 +53,6 @@ const Header = () => {
               
               {user ? (
                 <>
-                  <Button 
-                    variant="ghost" 
-                    className="text-white hover:bg-purple-700"
-                    onClick={() => handleNavigation(user.userType === 'professor' ? '/professor' : '/student')}
-                  >
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    {user.userType === 'professor' ? 'Painel' : 'Quiz'}
-                  </Button>
                   <div className="flex items-center gap-2 ml-2">
                     <span className="text-sm">
                       Olá, {user.nomeCompleto.split(' ')[0]}
@@ -124,14 +116,6 @@ const Header = () => {
                     
                     {user ? (
                       <>
-                        <Button 
-                          variant="ghost" 
-                          className="text-white hover:bg-purple-700 justify-start"
-                          onClick={() => handleNavigation(user.userType === 'professor' ? '/professor' : '/student')}
-                        >
-                          <BookOpen className="w-5 h-5 mr-3" />
-                          {user.userType === 'professor' ? 'Painel' : 'Quiz'}
-                        </Button>
                         <div className="px-4 py-2 border-t border-purple-500 mt-4">
                           <p className="text-sm mb-3">
                             Olá, {user.nomeCompleto.split(' ')[0]}

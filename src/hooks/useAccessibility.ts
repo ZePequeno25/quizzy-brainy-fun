@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 
 type FontSize = 'small' | 'normal' | 'large' | 'extra-large';
+type Theme = 'light' | 'dark';
 
 export const useAccessibility = () => {
   const [fontSize, setFontSize] = useState<FontSize>('normal');
+  const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
     // Carregar configuração salva do localStorage
@@ -11,6 +13,12 @@ export const useAccessibility = () => {
     if (savedFontSize) {
       setFontSize(savedFontSize);
       applyFontSize(savedFontSize);
+    }
+
+    const savedTheme = localStorage.getItem('accessibility-theme') as Theme;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      applyTheme(savedTheme);
     }
   }, []);
 
@@ -51,11 +59,28 @@ export const useAccessibility = () => {
     changeFontSize('normal');
   };
 
+  const applyTheme = (newTheme: Theme) => {
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    applyTheme(newTheme);
+    localStorage.setItem('accessibility-theme', newTheme);
+  };
+
   return {
     fontSize,
+    theme,
     changeFontSize,
     increaseFontSize,
     decreaseFontSize,
     resetFontSize,
+    toggleTheme,
   };
 };

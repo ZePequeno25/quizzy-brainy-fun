@@ -8,10 +8,10 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useAccessibility } from '@/hooks/useAccessibility';
-import { Eye, Minus, Plus, RotateCcw, Type } from 'lucide-react';
+import { Eye, Minus, Plus, RotateCcw, Type, Moon, Sun } from 'lucide-react';
 
 export const AccessibilityButton = () => {
-  const { fontSize, increaseFontSize, decreaseFontSize, resetFontSize } = useAccessibility();
+  const { fontSize, theme, increaseFontSize, decreaseFontSize, resetFontSize, toggleTheme } = useAccessibility();
   const [isOpen, setIsOpen] = useState(false);
 
   const getFontSizeLabel = () => {
@@ -80,6 +80,31 @@ export const AccessibilityButton = () => {
         >
           <RotateCcw className="w-4 h-4" />
           Restaurar Padrão
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        <div className="px-3 py-2">
+          <p className="text-sm font-medium text-foreground mb-2">
+            Tema
+          </p>
+        </div>
+        
+        <DropdownMenuItem 
+          onClick={toggleTheme}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          {theme === 'light' ? (
+            <>
+              <Moon className="w-4 h-4" />
+              Modo Escuro
+            </>
+          ) : (
+            <>
+              <Sun className="w-4 h-4" />
+              Modo Claro
+            </>
+          )}
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />
