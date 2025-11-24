@@ -1,29 +1,75 @@
 import { useState, useEffect, useCallback } from 'react';
-import { db } from '@/firebase'; // Import db from your Firebase config
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { apiFetch } from '@/lib/api';
 import { useAuth } from './useAuth';
 
 // Define the shape of a comment
 interface Comment {
   id: string;
-  questionId: string;
-  userId: string;
-  userName: string;
-  userType: 'aluno' | 'professor';
+  questionId?: string;
+  question_id?: string;
+  questionTheme?: string;
+  question_theme?: string;
+  questionText?: string;
+  question_text?: string;
+  userId?: string;
+  user_id?: string;
+  userName?: string;
+  user_name?: string;
+  userType?: 'aluno' | 'professor';
+  user_type?: 'aluno' | 'professor';
   message: string;
-  createdAt: any; // Firestore timestamp object
-  responses: Response[];
+  createdAt?: string;
+  created_at?: string;
+  responses?: Response[];
 }
 
 // Define the shape of a response
 interface Response {
   id: string;
-  userId: string;
-  userName: string;
-  userType: 'aluno' | 'professor';
+  commentId?: string;
+  comment_id?: string;
+  userId?: string;
+  user_id?: string;
+  userName?: string;
+  user_name?: string;
+  userType?: 'aluno' | 'professor';
+  user_type?: 'aluno' | 'professor';
   message: string;
-  createdAt: any; // Firestore timestamp object
+  createdAt?: string;
+  created_at?: string;
 }
+
+// Normalize comment data from API to frontend format
+const normalizeComment = (comment: any): Comment => {
+  // Debug: log original comment to see what we're receiving
+  if (!comment.question_theme && !comment.questionTheme) {
+    console.warn('⚠️ [useComments] Comentário sem question_theme:', comment);
+  }
+  if (!comment.user_name && !comment.userName) {
+    console.warn('⚠️ [useComments] Comentário sem user_name:', comment);
+  }
+  
+  return {
+    id: comment.id,
+    questionId: comment.question_id || comment.questionId,
+    questionTheme: comment.question_theme || comment.questionTheme || '',
+    questionText: comment.question_text || comment.questionText || '',
+    userId: comment.user_id || comment.userId,
+    userName: comment.user_name || comment.userName || '',
+    userType: (comment.user_type || comment.userType) as 'aluno' | 'professor',
+    message: comment.message || '',
+    createdAt: comment.created_at || comment.createdAt,
+    responses: (comment.responses || []).map((r: any) => ({
+      id: r.id,
+      commentId: r.comment_id || r.commentId,
+      userId: r.user_id || r.userId,
+      userName: r.user_name || r.userName || '',
+      userType: (r.user_type || r.userType) as 'aluno' | 'professor',
+      message: r.message || '',
+      createdAt: r.created_at || r.createdAt,
+    })),
+  };
+};
 
 export const useComments = () => {
   const { user, loading: authLoading } = useAuth();
@@ -31,69 +77,88 @@ export const useComments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // This effect will set up the real-time listener
-  useEffect(() => {
-    // Dont start fetching if auth is still loading
-    if (authLoading) {
+  // Fetch comments based on user type
+  const fetchComments = useCallback(async () => {
+    if (authLoading || !user) {
+      setLoading(false);
       return;
     }
 
     setLoading(true);
+    setError(null);
 
-    // Query for all comments, ordered by creation date
-    const commentsQuery = query(collection(db, 'comments'), orderBy('createdAt', 'desc'));
+    try {
+      let endpoint = '';
+      if (user.userType === 'professor') {
+        endpoint = `/teacher-comments/${user.uid}`;
+      } else {
+        endpoint = `/student-comments/${user.uid}`;
+      }
 
-    // onSnapshot returns an unsubscribe function
-    const unsubscribe = onSnapshot(commentsQuery, (querySnapshot) => {
-      const fetchedComments = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          questionId: data.questionId,
-          userId: data.userId,
-          userName: data.userName,
-          userType: data.userType,
-          message: data.message,
-          createdAt: data.createdAt,
-          // Ensure responses is always an array
-          responses: Array.isArray(data.responses) ? data.responses : [],
-        };
-      });
-      setComments(fetchedComments);
-      setLoading(false);
-    }, (err) => {
+      const response = await apiFetch(endpoint);
+      
+      if (!response.ok) {
+        throw new Error('Falha ao carregar comentários');
+      }
+
+      const data = await response.json();
+      // API returns { comments: [...] } for teacher, or array for student
+      const commentsArray = Array.isArray(data) ? data : (data.comments || []);
+      const normalizedComments = commentsArray.map(normalizeComment);
+      setComments(normalizedComments);
+    } catch (err: any) {
       console.error("Error fetching comments: ", err);
-      setError("Failed to load comments in real-time.");
+      setError(err.message || "Falha ao carregar comentários");
+    } finally {
       setLoading(false);
-    });
+    }
+  }, [user, authLoading]);
 
-    // Cleanup function to unsubscribe when the component unmounts
-    return () => unsubscribe();
+  // Fetch comments when user changes
+  useEffect(() => {
+    fetchComments();
+    
+    // Poll for updates less frequently to save data (every 30 seconds instead of 5)
+    const interval = setInterval(() => {
+      if (!authLoading && user) {
+        fetchComments();
+      }
+    }, 30000); // 30 seconds instead of 5
 
-  }, [authLoading]); // Rerun effect if authLoading changes
+    return () => clearInterval(interval);
+  }, [fetchComments, authLoading, user]);
 
   // Function to add a new comment
   const addComment = async (questionId: string, questionTheme: string, questionText: string, message: string) => {
     if (!user) {
-      setError("User not authenticated.");
+      setError("Usuário não autenticado.");
       return { success: false };
     }
+    
     try {
-      await addDoc(collection(db, 'comments'), {
-        questionId,
-        questionTheme,
-        questionText,
-        userId: user.uid,
-        userName: user.nomeCompleto,
-        userType: user.userType,
-        message,
-        createdAt: serverTimestamp(),
-        responses: [],
+      const response = await apiFetch('/comments/add', {
+        method: 'POST',
+        body: JSON.stringify({
+          questionId,
+          questionTheme,
+          questionText,
+          userName: user.nomeCompleto,
+          userType: user.userType,
+          message,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao adicionar comentário');
+      }
+
+      // Refresh comments after adding
+      await fetchComments();
       return { success: true };
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error adding comment: ", err);
-      setError("Failed to post comment.");
+      setError(err.message || "Falha ao adicionar comentário");
       return { success: false };
     }
   };
@@ -101,32 +166,35 @@ export const useComments = () => {
   // Function to add a response to a comment
   const addResponse = async (commentId: string, message: string) => {
     if (!user) {
-      setError("User not authenticated.");
+      setError("Usuário não autenticado.");
       return { success: false };
     }
     
-    // This is more complex with Firestore listeners, as it requires updating an array within a document.
-    // For this example, we'll keep it simple, but a real-world scenario might use a subcollection.
-    // The current listener will automatically pick up this change.
     try {
-        const commentRef = doc(db, "comments", commentId);
-        await updateDoc(commentRef, {
-            responses: arrayUnion({
-                id: new Date().toISOString(), // Simple unique ID
-                userId: user.uid,
-                userName: user.nomeCompleto,
-                userType: user.userType,
-                message,
-                createdAt: serverTimestamp()
-            })
-        });
-        return { success: true };
-    } catch (err) {
-        console.error("Error adding response: ", err);
-        setError("Failed to post response.");
-        return { success: false };
+      const response = await apiFetch('/comments-response', {
+        method: 'POST',
+        body: JSON.stringify({
+          commentId,
+          userName: user.nomeCompleto,
+          userType: user.userType,
+          message,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao adicionar resposta');
+      }
+
+      // Refresh comments after adding response
+      await fetchComments();
+      return { success: true };
+    } catch (err: any) {
+      console.error("Error adding response: ", err);
+      setError(err.message || "Falha ao adicionar resposta");
+      return { success: false };
     }
   };
 
-  return { comments, loading, error, addComment, addResponse };
+  return { comments, loading, error, addComment, addResponse, refetch: fetchComments };
 };

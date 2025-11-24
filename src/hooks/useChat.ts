@@ -1,86 +1,182 @@
-import { useState, useEffect } from 'react';
-import { db } from '@/firebase';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, or } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/api';
 import { useAuth } from './useAuth';
 
 // Define the shape of a chat message
 interface ChatMessage {
   id: string;
-  senderId: string;
-  receiverId: string;
-  senderName: string;
+  senderId?: string;
+  sender_id?: string;
+  receiverId?: string;
+  receiver_id?: string;
+  senderName?: string;
+  sender_name?: string;
   message: string;
-  createdAt: any; // Firestore timestamp object
+  createdAt?: string;
+  created_at?: string;
 }
 
-export const useChat = (partnerId: string | null) => {
+// Normalize message data from API to frontend format
+const normalizeMessage = (msg: any): ChatMessage => {
+  return {
+    id: msg.id,
+    senderId: msg.sender_id || msg.senderId,
+    receiverId: msg.receiver_id || msg.receiverId,
+    senderName: msg.sender_name || msg.senderName,
+    message: msg.message,
+    createdAt: msg.created_at || msg.createdAt,
+  };
+};
+
+export const useChat = (partnerId: string | null, isActive: boolean = false) => {
   const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  useEffect(() => {
-    // Don't do anything if auth is loading, or there is no user or chat partner
-    if (authLoading || !user || !partnerId) {
-      setLoading(false);
-      setMessages([]); // Clear messages if there's no partner
+  // Fetch messages from API (only when active)
+  const fetchMessages = useCallback(async (showLoading: boolean = false) => {
+    if (authLoading || !user || !partnerId || !isActive) {
+      if (!isActive) {
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
+    if (showLoading) {
+      setLoading(true);
+    }
+    setError(null);
 
-    // This query is complex. It needs to find messages where:
-    // (sender is me AND receiver is them) OR (sender is them AND receiver is me)
-    // Note: Firestore doesn't support complex OR queries, so we filter client-side
-    const messagesQuery = query(
-      collection(db, 'chats'),
-      orderBy('createdAt', 'asc')
-    );
-    
-    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
-        const fetchedMessages = querySnapshot.docs
-            .map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            } as ChatMessage))
-            // Double-check the filtering client-side, as Firestore's OR queries can be complex
-            .filter(msg => 
-                (msg.senderId === user.uid && msg.receiverId === partnerId) ||
-                (msg.senderId === partnerId && msg.receiverId === user.uid)
+    try {
+      const response = await apiFetch(`/chat?senderId=${user.uid}&receiverId=${partnerId}`);
+      
+      if (!response.ok) {
+        throw new Error('Falha ao carregar mensagens');
+      }
+
+      const data = await response.json();
+      const normalizedMessages = Array.isArray(data) 
+        ? data.map(normalizeMessage).sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateA - dateB;
+          })
+        : [];
+      
+      // Remove temporary messages and merge with real messages
+      setMessages(prev => {
+        const tempMessages = prev.filter(m => m.id.startsWith('temp-'));
+        const realMessages = normalizedMessages;
+        
+        // If we have temp messages, keep them if they're not in real messages yet
+        // Otherwise, use only real messages
+        if (tempMessages.length > 0) {
+          // Check if any temp message content matches a real message (within last 2 seconds)
+          const twoSecondsAgo = Date.now() - 2000;
+          const merged = [...realMessages];
+          
+          tempMessages.forEach(temp => {
+            const exists = realMessages.some(real => 
+              real.message === temp.message && 
+              real.senderId === temp.senderId &&
+              real.createdAt && 
+              new Date(real.createdAt).getTime() > twoSecondsAgo
             );
-
-      setMessages(fetchedMessages);
-      setLoading(false);
-    }, (err) => {
+            if (!exists) {
+              merged.push(temp);
+            }
+          });
+          
+          return merged.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateA - dateB;
+          });
+        }
+        
+        return realMessages;
+      });
+      
+      setHasLoadedOnce(true);
+    } catch (err: any) {
       console.error("Error fetching chat messages: ", err);
-      setError("Failed to load chat messages.");
-      setLoading(false);
-    });
+      setError(err.message || "Falha ao carregar mensagens");
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
+    }
+  }, [user, partnerId, authLoading, isActive]);
 
-    // Cleanup subscription on component unmount or when dependencies change
-    return () => unsubscribe();
+  // Load messages only when chat becomes active
+  useEffect(() => {
+    if (isActive && !hasLoadedOnce && !authLoading && user && partnerId) {
+      fetchMessages(true); // Show loading on first load
+    } else if (!isActive) {
+      // Reset when chat closes
+      setHasLoadedOnce(false);
+      setMessages([]);
+    }
+  }, [isActive, hasLoadedOnce, authLoading, user, partnerId, fetchMessages]);
 
-  }, [user, partnerId, authLoading]);
+  // Poll for updates only when chat is active (optimized: every 10 seconds instead of 2)
+  useEffect(() => {
+    if (!isActive || !hasLoadedOnce || authLoading || !user || !partnerId) {
+      return;
+    }
+
+    // Poll less frequently to save data
+    const interval = setInterval(() => {
+      fetchMessages(false); // Don't show loading spinner on polling
+    }, 10000); // 10 seconds instead of 2
+
+    return () => clearInterval(interval);
+  }, [isActive, hasLoadedOnce, authLoading, user, partnerId, fetchMessages]);
 
   // Function to send a message
   const sendMessage = async (message: string) => {
     if (!user || !partnerId || !message.trim()) {
-      setError("Cannot send message. Invalid user, partner, or message.");
+      setError("Não é possível enviar mensagem. Usuário, parceiro ou mensagem inválidos.");
       return { success: false };
     }
 
     try {
-      await addDoc(collection(db, 'chats'), {
-        senderId: user.uid,
-        receiverId: partnerId,
-        senderName: user.nomeCompleto, // Include sender's name
-        message: message.trim(),
-        createdAt: serverTimestamp(),
+      const response = await apiFetch('/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          receiverId: partnerId,
+          message: message.trim(),
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao enviar mensagem');
+      }
+
+      // Optimistically add message to UI (don't wait for refresh)
+      const tempMessage: ChatMessage = {
+        id: `temp-${Date.now()}`,
+        senderId: user.uid,
+        senderName: user.nomeCompleto,
+        message: message.trim(),
+        createdAt: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, tempMessage]);
+
+      // Refresh messages after sending (silently, no loading spinner)
+      setTimeout(() => {
+        fetchMessages(false);
+      }, 500);
+
       return { success: true };
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error sending message: ", err);
-      setError("Failed to send message.");
+      setError(err.message || "Falha ao enviar mensagem");
+      // Remove temp message on error
+      setMessages(prev => prev.filter(m => !m.id.startsWith('temp-')));
       return { success: false };
     }
   };

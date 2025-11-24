@@ -55,10 +55,10 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}): Pro
     const response = await fetch(`${API_URL}${endpoint}`, config);
 
     // Adiciona log detalhado para todas as respostas não-OK
+    // Não lemos o body aqui para evitar "body stream already read"
     if (!response.ok) {
-      const errorBody = await response.text().catch(() => 'Corpo da resposta não pôde ser lido');
       console.error(
-        `❌ [apiFetch] API call para ${endpoint} falhou com status ${response.status}. Corpo: ${errorBody}`
+        `❌ [apiFetch] API call para ${endpoint} falhou com status ${response.status}`
       );
     }
 

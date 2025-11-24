@@ -19,14 +19,15 @@ const register = async (req, res) => {
     });
 
     // Validações obrigatórias
-    if (!nomeCompleto || !cpf || !userType || !dataNascimento) {
+    if (!nomeCompleto || !cpf || !userType || !dataNascimento || !password) {
       logger.warn('Campos obrigatórios faltando', 'AUTH', { 
         nomeCompleto: !!nomeCompleto, 
         cpf: !!cpf, 
         userType: !!userType, 
-        dataNascimento: !!dataNascimento 
+        dataNascimento: !!dataNascimento,
+        password: !!password
       });
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: 'Todos os campos são obrigatórios, incluindo a senha' });
     }
 
     // Validação userType
@@ -73,8 +74,22 @@ const register = async (req, res) => {
 
     console.log('✅ [REGISTER] CPF livre para cadastro');
 
-    // Gerar senha (customizada ou CPF como padrão)
-    const finalPassword = password || cpf;
+    // ✅ VALIDAR QUE A SENHA NÃO É IGUAL AO CPF
+    if (password === cpf) {
+      console.log('❌ [REGISTER] Senha não pode ser igual ao CPF');
+      logger.warn('Senha igual ao CPF', 'AUTH');
+      return res.status(400).json({ error: 'A senha não pode ser igual ao CPF' });
+    }
+
+    // ✅ VALIDAR FORÇA DA SENHA (mínimo 6 caracteres)
+    if (password.length < 6) {
+      console.log('❌ [REGISTER] Senha muito curta');
+      logger.warn('Senha muito curta', 'AUTH');
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
+    }
+
+    // Usar a senha fornecida pelo usuário
+    const finalPassword = password;
     
     console.log('🔐 [REGISTER] Gerando hash da senha...');
     const passwordHash = await bcrypt.hash(finalPassword, SALT_ROUNDS);
@@ -126,6 +141,19 @@ const register = async (req, res) => {
     // Salvar no Firestore
     console.log('💾 [REGISTER] Salvando usuário no Firestore...');
     await createUser(userData);
+
+    // ✅ Gerar código de professor automaticamente se for professor
+    if (userType === 'professor') {
+      try {
+        const { createTeacherCode } = require('../models/teacherCodeModel');
+        const linkCode = `PROF_${userRecord.uid.slice(0, 8).toUpperCase()}`;
+        await createTeacherCode(userRecord.uid, linkCode);
+        console.log('✅ [REGISTER] Código de professor gerado automaticamente:', linkCode);
+      } catch (codeError) {
+        console.error('⚠️ [REGISTER] Erro ao gerar código de professor (não crítico):', codeError.message);
+        // Não falha o registro se não conseguir gerar o código
+      }
+    }
 
     // Log de sucesso
     logger.logAuth('REGISTER', userRecord.uid, true, { 
@@ -205,7 +233,7 @@ try {
 
       if (userSnapshot.empty) {
         console.log('❌ Nenhum usuário com CPF:', normalizedCpf, 'e tipo:', normalizedUserType);
-        return res.status(401).json({ error: 'Usuário não encontrado' });
+        return res.status(401).json({ error: 'Tipo ou CPF ou Senha incorretos' });
       }
 
       const userDoc = userSnapshot.docs[0];
@@ -221,7 +249,7 @@ try {
 
       if (!passwordMatch) {
         console.log('❌ Senha incorreta');
-        return res.status(401).json({ error: 'Invalid email or password' });
+        return res.status(401).json({ error: 'Tipo ou CPF ou Senha incorretos' });
       }
 
       console.log('✅ Login bem-sucedido!');
@@ -265,7 +293,7 @@ try {
     if (email && password) {
       const user = await verifyUserCredentials(email, password);
       if (!user) {
-        return res.status(401).json({ error: 'Invalid email or password' });
+        return res.status(401).json({ error: 'Tipo ou CPF ou Senha incorretos' });
       }
 
       const token = await admin.auth().createCustomToken(user.userId);

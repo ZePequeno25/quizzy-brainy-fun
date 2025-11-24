@@ -53,13 +53,14 @@ const Student = () => {
       selectedVisibility: "public",
       selectedTeacher: "all",
       timeLeft: 20,
-      isPaused: false
+      isPaused: false,
+      selectedAnswer: null as number | null
     };
   });
 
   const { 
     score, questionIndex, isQuizActive, showFeedback, 
-    selectedTheme, selectedVisibility, selectedTeacher, timeLeft, isPaused 
+    selectedTheme, selectedVisibility, selectedTeacher, timeLeft, isPaused, selectedAnswer
   } = quizState;
 
   const updateQuizState = (newState: Partial<typeof quizState>) => {
@@ -163,16 +164,21 @@ const Student = () => {
     const currentQuestion = quizQuestions[questionIndex];
     if (!currentQuestion) return;
 
-    if (selectedOptionIndex === currentQuestion.correctOptionIndex) {
+    // Armazena a resposta selecionada
+    updateQuizState({ selectedAnswer: selectedOptionIndex });
+    
+    // Verifica se a resposta está correta
+    if (selectedOptionIndex !== null && selectedOptionIndex === currentQuestion.correctOptionIndex) {
       updateQuizState({ score: score + 1 });
     }
+    
     updateQuizState({ showFeedback: true });
   };
 
   const nextQuestion = () => {
     const nextIndex = questionIndex + 1;
     if (nextIndex < quizQuestions.length) {
-      updateQuizState({ questionIndex: nextIndex, showFeedback: false, timeLeft: 20 });
+      updateQuizState({ questionIndex: nextIndex, showFeedback: false, timeLeft: 20, selectedAnswer: null });
     } else {
       endQuiz();
     }
@@ -218,45 +224,45 @@ const Student = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-4">
       <Header />
-      <div className="container mx-auto py-8 px-4">
-         <div className="mb-8">
-           <h1 className="text-3xl font-bold text-purple-600 mb-2">
+      <div className="container mx-auto py-4 px-4 max-w-7xl">
+         <div className="mb-4 sm:mb-8">
+           <h1 className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
              Área do Aluno
            </h1>
-           <p className="text-gray-600">
+           <p className="text-sm sm:text-base text-gray-600">
              Bem-vindo, {user.nomeCompleto.split(' ')[0]}!
            </p>
          </div>
 
-        <Tabs defaultValue="quiz" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-             <TabsTrigger value="quiz" className="flex items-center gap-2">
-               <Play className="w-4 h-4" />
-               Quiz
+        <Tabs defaultValue="quiz" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+             <TabsTrigger value="quiz" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+               <Play className="w-3 h-3 sm:w-4 sm:h-4" />
+               <span className="hidden sm:inline">Quiz</span>
              </TabsTrigger>
-             <TabsTrigger value="link" className="flex items-center gap-2">
-               <Link className="w-4 h-4" />
-               Professores
+             <TabsTrigger value="link" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+               <Link className="w-3 h-3 sm:w-4 sm:h-4" />
+               <span className="hidden sm:inline">Professores</span>
              </TabsTrigger>
-             <TabsTrigger value="chat" className="flex items-center gap-2">
-               <MessageCircle className="w-4 h-4" />
-               Chat
+             <TabsTrigger value="chat" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+               <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+               <span className="hidden sm:inline">Chat</span>
              </TabsTrigger>
            </TabsList>
 
           <TabsContent value="quiz">
-            <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          <div className="lg:col-span-1 order-2 lg:order-1">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
                   Seu Progresso
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 sm:p-6">
                 <div>
                   <p className="text-sm text-gray-600">Pontuação Atual</p>
                   <p className="text-2xl font-bold">{score}</p>
@@ -279,11 +285,11 @@ const Student = () => {
               </CardContent>
             </Card>
 
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Sistema de Graduação</CardTitle>
+            <Card className="mt-4 sm:mt-6">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Sistema de Graduação</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6">
                 <div className="space-y-2">
                   {capoeiraRanks.map((rank, index) => (
                     <div key={index} className="flex items-center gap-2 text-sm">
@@ -299,19 +305,19 @@ const Student = () => {
             </Card>
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 order-1 lg:order-2">
             {!isQuizActive ? (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Play className="w-5 h-5 text-purple-600" />
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                     Iniciar Quiz
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     Configure seu quiz e escolha as opções de visibilidade
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 p-4 sm:p-6">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Fonte das Questões</label>
                     <Select value={selectedVisibility} onValueChange={(value) => updateQuizState({ selectedVisibility: value as string})}>
@@ -413,7 +419,7 @@ const Student = () => {
                   ) : (
                     <QuizFeedbackView 
                         question={currentQuestion}
-                        selectedAnswer={-1} // This part needs logic to capture the selected answer
+                        selectedAnswer={selectedAnswer ?? -1}
                         onNext={nextQuestion}
                         isLastQuestion={questionIndex + 1 >= quizQuestions.length}
                     />
@@ -540,7 +546,7 @@ const QuizFeedbackView = ({ question, selectedAnswer, onNext, isLastQuestion }: 
         <div className="space-y-4">
             <div className={`p-4 rounded-lg ${isCorrect ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"} border`}>
                 <h3 className="text-lg font-semibold mb-2">
-                {isCorrect ? (question.feedback.title || "Correto!") : "Ops, não foi dessa vez!"}
+                {isCorrect ? "Parabéns Você Conseguiu" : "Ops, não foi dessa vez!"}
                 </h3>
                 {question.feedback.illustration && <img src={question.feedback.illustration} alt="Feedback" className="w-full max-w-sm mx-auto mb-4 rounded"/>}
                 <p>

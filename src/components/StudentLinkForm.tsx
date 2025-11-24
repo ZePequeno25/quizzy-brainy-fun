@@ -4,11 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useTeacherStudent } from "@/hooks/useTeacherStudent";
+import { useAuth } from "@/hooks/useAuth";
 import { Link, UserPlus, X } from "lucide-react";
 
 const StudentLinkForm = () => {
+  const { user } = useAuth();
   const [code, setCode] = useState("");
-  const { relations, loading, linkStudentToTeacher, unlinkStudent } = useTeacherStudent();
+  const { relations, loading, linkStudentToTeacher, unlinkStudent } = useTeacherStudent(user?.uid);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -24,8 +24,8 @@ const ChatWindow = ({ isOpen, onClose, onMinimize, chattingWith }: ChatWindowPro
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Use the new useChat hook
-  const { messages, loading, sendMessage: sendChatMessage } = useChat(chattingWith?.id || null);
+  // Use the new useChat hook - only active when chat is open
+  const { messages, loading, sendMessage: sendChatMessage } = useChat(chattingWith?.id || null, isOpen);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,10 +51,10 @@ const ChatWindow = ({ isOpen, onClose, onMinimize, chattingWith }: ChatWindowPro
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 h-96 z-50">
+    <div className="fixed bottom-4 right-4 w-[calc(100vw-2rem)] sm:w-80 h-[calc(100vh-8rem)] sm:h-96 z-50 max-w-sm">
       <Card className="h-full shadow-lg border-2 flex flex-col">
         <CardHeader className="p-3 bg-purple-600 text-white rounded-t-lg">
-          <CardTitle className="flex items-center justify-between text-sm">
+          <CardTitle className="flex items-center justify-between text-xs sm:text-sm">
             <div className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               <span>Chat com {chattingWith.name}</span>
@@ -101,7 +101,9 @@ const ChatWindow = ({ isOpen, onClose, onMinimize, chattingWith }: ChatWindowPro
                       </div>
                       <p>{message.message}</p>
                       <p className={`text-xs mt-1 text-right ${message.senderId === user?.uid ? 'text-purple-200' : 'text-gray-500'}`}>
-                        {message.createdAt?.toDate()?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) || ''}
+                        {message.createdAt 
+                          ? new Date(message.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                          : ''}
                       </p>
                     </div>
                   </div>

@@ -99,7 +99,9 @@ const QuestionComments = ({ questionId, questionTheme, questionText }: QuestionC
                     </Badge>
                   </div>
                   <span className="text-sm text-gray-500">
-                    {new Date(comment.createdAt).toLocaleDateString('pt-BR')}
+                    {comment.createdAt 
+                      ? new Date(comment.createdAt).toLocaleDateString('pt-BR')
+                      : ''}
                   </span>
                 </div>
                 
@@ -166,7 +168,9 @@ const QuestionComments = ({ questionId, questionTheme, questionText }: QuestionC
                             </Badge>
                           </div>
                           <span className="text-xs text-gray-500">
-                            {new Date(response.createdAt).toLocaleDateString('pt-BR')}
+                            {response.createdAt 
+                              ? new Date(response.createdAt).toLocaleDateString('pt-BR')
+                              : ''}
                           </span>
                         </div>
                         <p className="text-sm text-gray-700">{response.message}</p>

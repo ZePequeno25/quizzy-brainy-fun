@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
-import { signInWithCustomToken, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from '@/firebase'; // Import auth from your firebase config file
 
 interface User {
@@ -32,13 +32,21 @@ export const useAuth = () => {
         if (savedUser) {
           try {
             const userData = JSON.parse(savedUser);
-            setUser(userData);
+            // Só atualiza se o UID corresponder ao usuário do Firebase
+            if (userData.uid === firebaseUser.uid) {
+              setUser(userData);
+            } else {
+              // Se o UID não corresponder, limpa e faz logout
+              localStorage.removeItem('currentUser');
+              setUser(null);
+            }
           } catch (error) {
             console.error('❌ [useAuth] Erro ao carregar usuário salvo:', error);
             logout();
           }
         } else {
-          logout();
+          // Se não há usuário salvo mas há Firebase user, limpa
+          setUser(null);
         }
       } else {
         setUser(null);
@@ -68,8 +76,26 @@ export const useAuth = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro no login');
+        // Lê o body da resposta apenas uma vez
+        let errorMessage = 'Tipo ou CPF ou Senha incorretos';
+        try {
+          const errorData = await response.json();
+          // Se a API retornar uma mensagem específica, usa ela
+          // Mas para 401, sempre mostra a mensagem amigável
+          if (response.status === 401) {
+            errorMessage = 'Tipo ou CPF ou Senha incorretos';
+          } else {
+            errorMessage = errorData.error || errorMessage;
+          }
+        } catch (parseError) {
+          // Se não conseguir ler o JSON, usa a mensagem padrão
+          if (response.status === 401) {
+            errorMessage = 'Tipo ou CPF ou Senha incorretos';
+          } else {
+            errorMessage = 'Erro ao fazer login. Tente novamente.';
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -87,7 +113,37 @@ export const useAuth = () => {
           cpf: cleanedCpf,
         };
 
+        // Salva no localStorage primeiro
         localStorage.setItem('currentUser', JSON.stringify(userData));
+        
+        // Aguarda o Firebase processar completamente o estado de autenticação
+        // e garantir que o onAuthStateChanged seja disparado antes de atualizar o estado
+        await new Promise<void>((resolve) => {
+          let resolved = false;
+          
+          // Escuta o onAuthStateChanged para confirmar que o Firebase processou
+          const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user && user.uid === firebaseUser.uid && !resolved) {
+              resolved = true;
+              unsubscribe();
+              // Aguarda um pouco mais para garantir que tudo está sincronizado
+              setTimeout(() => {
+                resolve();
+              }, 300);
+            }
+          });
+          
+          // Timeout de segurança caso o onAuthStateChanged não dispare em 1 segundo
+          setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              unsubscribe();
+              resolve();
+            }
+          }, 1500);
+        });
+
+        // Atualiza o estado do usuário após confirmar que o Firebase está pronto
         setUser(userData);
 
         toast({
@@ -95,9 +151,11 @@ export const useAuth = () => {
           description: `Bem-vindo, ${userData.nomeCompleto}`,
         });
 
-        // Aguarda o Firebase processar completamente antes de navegar
-        await new Promise(resolve => setTimeout(resolve, 100));
-        navigate(userType === 'aluno' ? '/student' : '/professor');
+        // Navega após confirmar que o Firebase está pronto e o estado foi atualizado
+        // Usa replace: true para evitar problemas de histórico
+        const targetPath = userType === 'aluno' ? '/student' : '/professor';
+        navigate(targetPath, { replace: true });
+        
         return { success: true };
       }
       throw new Error('Falha ao autenticar com Firebase.');
@@ -114,24 +172,68 @@ export const useAuth = () => {
   };
 
   const register = async (userData: any) => {
+    const cleanedCpf = cleanCpf(userData.cpf || '');
+    
+    if (!cleanedCpf || !/^\d{11}$/.test(cleanedCpf)) {
+      toast({
+        title: 'Erro no cadastro',
+        description: 'O CPF deve conter 11 dígitos numéricos.',
+        variant: 'destructive',
+      });
+      return { success: false, error: 'Invalid CPF format' };
+    }
+
+    if (!userData.password || userData.password.length < 6) {
+      toast({
+        title: 'Erro no cadastro',
+        description: 'A senha deve ter pelo menos 6 caracteres.',
+        variant: 'destructive',
+      });
+      return { success: false, error: 'Password too short' };
+    }
+
+    if (userData.password === cleanedCpf) {
+      toast({
+        title: 'Erro no cadastro',
+        description: 'A senha não pode ser igual ao CPF.',
+        variant: 'destructive',
+      });
+      return { success: false, error: 'Password cannot be equal to CPF' };
+    }
+
     try {
       const response = await apiFetch('/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({
+          nomeCompleto: userData.nomeCompleto,
+          cpf: cleanedCpf,
+          userType: userData.userType,
+          dataNascimento: userData.dataNascimento,
+          password: userData.password,
+          genero: userData.genero,
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro no cadastro');
+        let errorMessage = 'Erro ao realizar cadastro';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          errorMessage = 'Erro ao realizar cadastro. Tente novamente.';
+        }
+        throw new Error(errorMessage);
       }
 
+      const data = await response.json();
+      
       toast({
         title: 'Cadastro realizado com sucesso!',
-        description: 'Você já pode fazer login',
+        description: 'Você pode fazer login agora.',
       });
 
-      return { success: true };
+      return { success: true, data };
     } catch (error: any) {
       console.error('❌ [useAuth] Erro no cadastro:', error.message);
       toast({
@@ -154,145 +256,6 @@ export const useAuth = () => {
     navigate('/');
   };
 
-  const loginWithGoogle = async (userType: 'aluno' | 'professor') => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const firebaseUser = result.user;
-
-      if (!firebaseUser) {
-        throw new Error('Falha na autenticação com Google');
-      }
-
-      // Sincronizar com a API backend
-      const idToken = await firebaseUser.getIdToken();
-      
-      const response = await apiFetch('/google-auth', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ 
-          userType,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          uid: firebaseUser.uid
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao sincronizar com backend');
-      }
-
-      const data = await response.json();
-      
-      const userData = {
-        uid: firebaseUser.uid,
-        email: data.email || firebaseUser.email,
-        nomeCompleto: data.nomeCompleto || firebaseUser.displayName,
-        userType: data.userType || userType,
-        cpf: data.cpf || '',
-      };
-
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      setUser(userData);
-
-      toast({
-        title: 'Login realizado com sucesso!',
-        description: `Bem-vindo, ${userData.nomeCompleto}`,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 100));
-      navigate(userType === 'aluno' ? '/student' : '/professor');
-      return { success: true };
-
-    } catch (error: any) {
-      console.error('❌ [useAuth] Erro no login com Google:', error.message);
-      
-      // Se houver erro, fazer logout do Firebase
-      await auth.signOut();
-      
-      toast({
-        title: 'Erro no login com Google',
-        description: error.message || 'Erro ao tentar fazer login com Google',
-        variant: 'destructive',
-      });
-      return { success: false, error: error.message };
-    }
-  };
-
-  const registerWithGoogle = async (userType: 'aluno' | 'professor') => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const firebaseUser = result.user;
-
-      if (!firebaseUser) {
-        throw new Error('Falha na autenticação com Google');
-      }
-
-      // Sincronizar com a API backend
-      const idToken = await firebaseUser.getIdToken();
-      
-      const response = await apiFetch('/google-auth', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ 
-          userType,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          uid: firebaseUser.uid,
-          isRegistration: true
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao criar conta com Google');
-      }
-
-      const data = await response.json();
-      
-      const userData = {
-        uid: firebaseUser.uid,
-        email: data.email || firebaseUser.email,
-        nomeCompleto: data.nomeCompleto || firebaseUser.displayName,
-        userType: data.userType || userType,
-        cpf: data.cpf || '',
-      };
-
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      setUser(userData);
-
-      toast({
-        title: 'Cadastro realizado com sucesso!',
-        description: `Bem-vindo, ${userData.nomeCompleto}`,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 100));
-      navigate(userType === 'aluno' ? '/student' : '/professor');
-      return { success: true };
-
-    } catch (error: any) {
-      console.error('❌ [useAuth] Erro no cadastro com Google:', error.message);
-      
-      // Se houver erro, fazer logout do Firebase
-      await auth.signOut();
-      
-      toast({
-        title: 'Erro no cadastro com Google',
-        description: error.message || 'Erro ao tentar cadastrar com Google',
-        variant: 'destructive',
-      });
-      return { success: false, error: error.message };
-    }
-  };
-
   const getAuthToken = async () => {
     const currentUser = auth.currentUser;
     if (currentUser) {
@@ -304,10 +267,8 @@ export const useAuth = () => {
   return {
     user, 
     loading, 
-    login,
-    loginWithGoogle,
+    login, 
     register,
-    registerWithGoogle,
     logout,
     getAuthToken
   };

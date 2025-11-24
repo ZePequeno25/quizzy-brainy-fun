@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTeacherStudent } from "@/hooks/useTeacherStudent";
+import { useAuth } from "@/hooks/useAuth";
 import { Copy, Link, Users, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const TeacherLinkCode = () => {
-  const { relations, teacherCode, generateTeacherCode, unlinkStudent } = useTeacherStudent();
+  const { user } = useAuth();
+  const { relations, teacherCode, generateTeacherCode, unlinkStudent } = useTeacherStudent(user?.uid);
   const { toast } = useToast();
 
   const copyToClipboard = async () => {

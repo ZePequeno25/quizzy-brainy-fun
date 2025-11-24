@@ -45,13 +45,13 @@ interface Question {
 // Interface for comments
 interface Comment {
   id: string;
-  questionId: string;
-  questionTheme: string;
-  questionText: string;
-  userId: string;
-  userName: string;
-  comment: string; // or 'message' depending on the backend
-  createdAt: string;
+  questionId?: string;
+  questionTheme?: string;
+  questionText?: string;
+  userId?: string;
+  userName?: string;
+  message: string;
+  createdAt?: string;
 }
 
 const Professor = () => {
@@ -114,11 +114,24 @@ const Professor = () => {
   const loadComments = useCallback(async () => {
     if (!user) return;
     try {
-      // This endpoint should be protected and return all comments on questions created by the logged-in teacher
-      const response = await apiFetch('/comments'); 
+      // Use the correct endpoint for teacher comments
+      const response = await apiFetch(`/teacher-comments/${user.uid}`); 
       if (response.ok) {
         const data = await response.json();
-        setComments(Array.isArray(data) ? data : []);
+        // API returns { comments: [...] } for teacher
+        const commentsArray = Array.isArray(data) ? data : (data.comments || []);
+        // Normalize comments from snake_case to camelCase
+        const normalizedComments = commentsArray.map((comment: any) => ({
+          id: comment.id,
+          questionId: comment.question_id || comment.questionId,
+          questionTheme: comment.question_theme || comment.questionTheme || '',
+          questionText: comment.question_text || comment.questionText || '',
+          userId: comment.user_id || comment.userId,
+          userName: comment.user_name || comment.userName || '',
+          message: comment.message || '',
+          createdAt: comment.created_at || comment.createdAt,
+        }));
+        setComments(normalizedComments);
       } else {
         throw new Error('Falha ao carregar comentários');
       }
@@ -250,72 +263,72 @@ const Professor = () => {
 
   // Renderização do componente
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-4">
       <Header />
-      <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-purple-600 mb-2">
+      <div className="container mx-auto py-4 px-4 max-w-7xl">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
             Área do Professor
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Bem-vindo, {user.nomeCompleto.split(' ')[0]}! Gerencie seus conteúdos e alunos.
           </p>
         </div>
 
-        <Tabs defaultValue="students" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="students" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Alunos
+        <Tabs defaultValue="students" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto overflow-x-auto">
+            <TabsTrigger value="students" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Alunos</span>
             </TabsTrigger>
-            <TabsTrigger value="add" className="flex items-center gap-2">
-               <Plus className="w-4 h-4" />
-               Adicionar Questão
+            <TabsTrigger value="add" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+               <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+               <span className="hidden sm:inline">Adicionar</span>
              </TabsTrigger>
-            <TabsTrigger value="questions" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Minhas Questões
+            <TabsTrigger value="questions" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+              <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Questões</span>
             </TabsTrigger>
-            <TabsTrigger value="comments" className="flex items-center gap-2">
-               <MessageCircle className="w-4 h-4" />
-               Comentários
+            <TabsTrigger value="comments" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+               <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+               <span className="hidden sm:inline">Comentários</span>
              </TabsTrigger>
-             <TabsTrigger value="link" className="flex items-center gap-2">
-               <Link className="w-4 h-4" />
-               Código de Vínculo
+             <TabsTrigger value="link" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+               <Link className="w-3 h-3 sm:w-4 sm:h-4" />
+               <span className="hidden sm:inline">Código</span>
              </TabsTrigger>
-             <TabsTrigger value="upload" className="flex items-center gap-2">
-               <FileText className="w-4 h-4" />
-               Upload XML
+             <TabsTrigger value="upload" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-3">
+               <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+               <span className="hidden sm:inline">Upload</span>
              </TabsTrigger>
            </TabsList>
            
           <TabsContent value="students">
             <Card>
-              <CardHeader>
-                <CardTitle>Alunos Vinculados</CardTitle>
-                <CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Alunos Vinculados</CardTitle>
+                <CardDescription className="text-sm">
                   {students.length} {students.length === 1 ? 'aluno vinculado' : 'alunos vinculados'}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {loading ? <p>Carregando alunos...</p> : (
-                <div className="overflow-x-auto">
-                  <Table>
+              <CardContent className="p-4 sm:p-6">
+                {loading ? <p className="text-sm">Carregando alunos...</p> : (
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Pontuação</TableHead>
-                        <TableHead>Graduação</TableHead>
-                        <TableHead>Ações</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Nome</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Pontuação</TableHead>
+                        <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Graduação</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {students.map((student) => (
                         <TableRow key={student.id}>
-                          <TableCell className="font-medium">{student.nomeCompleto}</TableCell>
-                          <TableCell>{student.score || 0}</TableCell>
-                          <TableCell>{getRank(student.score || 0)}</TableCell>
+                          <TableCell className="font-medium text-xs sm:text-sm">{student.nomeCompleto}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">{student.score || 0}</TableCell>
+                          <TableCell className="text-xs sm:text-sm hidden sm:table-cell">{getRank(student.score || 0)}</TableCell>
                           <TableCell>
                             <Button
                               variant="outline"
@@ -328,9 +341,10 @@ const Professor = () => {
                                 });
                                 setIsChatOpen(true);
                               }}
+                              className="text-xs sm:text-sm"
                             >
-                              <MessageCircle className="w-4 h-4 mr-1" />
-                              Chat
+                              <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              <span className="hidden sm:inline">Chat</span>
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -497,7 +511,7 @@ const Professor = () => {
                             Responder
                           </Button>
                         </div>
-                        <p className="text-gray-800 bg-white p-3 rounded-md shadow-sm">{comment.comment}</p>
+                        <p className="text-gray-800 bg-white p-3 rounded-md shadow-sm">{comment.message}</p>
                       </div>
                     ))}
                   </div>
