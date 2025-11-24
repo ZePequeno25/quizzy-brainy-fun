@@ -30,7 +30,7 @@ export const AccessibilityButton = () => {
         <Button 
           variant="ghost" 
           size="sm"
-          className="flex items-center gap-2 text-white hover:bg-purple-700"
+          className="flex items-center gap-2 text-primary-foreground hover:bg-primary/90"
           aria-label="Opções de acessibilidade"
         >
           <Eye className="w-4 h-4" />
