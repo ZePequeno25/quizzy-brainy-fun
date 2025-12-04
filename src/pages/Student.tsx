@@ -206,7 +206,7 @@ const Student = () => {
   // Show main loading screen while auth is in progress
   if (authLoading || componentLoading) {
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
             <Header />
             <div className="container mx-auto py-8 px-4 text-center">Carregando dados do aluno...</div>
         </div>
@@ -216,22 +216,22 @@ const Student = () => {
   // If auth is done but there is no user, deny access
   if (!user) {
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
             <Header />
-            <div className="container mx-auto py-8 px-4 text-center text-red-600">Acesso negado. Por favor, faça login.</div>
+            <div className="container mx-auto py-8 px-4 text-center text-destructive">Acesso negado. Por favor, faça login.</div>
         </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-4">
+    <div className="min-h-screen bg-background pb-4">
       <Header />
       <div className="container mx-auto py-4 px-4 max-w-7xl">
          <div className="mb-4 sm:mb-8">
-           <h1 className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
+           <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">
              Área do Aluno
            </h1>
-           <p className="text-sm sm:text-base text-gray-600">
+           <p className="text-sm sm:text-base text-muted-foreground">
              Bem-vindo, {user.nomeCompleto.split(' ')[0]}!
            </p>
          </div>
@@ -264,19 +264,19 @@ const Student = () => {
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-6">
                 <div>
-                  <p className="text-sm text-gray-600">Pontuação Atual</p>
+                  <p className="text-sm text-muted-foreground">Pontuação Atual</p>
                   <p className="text-2xl font-bold">{score}</p>
                 </div>
                 
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Graduação Atual</p>
+                  <p className="text-sm text-muted-foreground mb-2">Graduação Atual</p>
                   <div className={`p-3 rounded-lg ${currentRank.color} text-white text-center font-semibold`}>
                     {currentRank.title}
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Progresso para próxima graduação</p>
+                  <p className="text-sm text-muted-foreground mb-2">Progresso para próxima graduação</p>
                   <Progress 
                     value={Math.min((score / (currentRank.score + 3)) * 100, 100)} 
                     className="h-2"
@@ -294,7 +294,7 @@ const Student = () => {
                   {capoeiraRanks.map((rank, index) => (
                     <div key={index} className="flex items-center gap-2 text-sm">
                       <div className={`w-4 h-4 rounded ${rank.color}`}></div>
-                      <span className={score >= rank.score ? 'font-semibold' : 'text-gray-500'}>
+                      <span className={score >= rank.score ? 'font-semibold' : 'text-muted-foreground'}>
                         {rank.title} ({rank.score}+ pontos)
                       </span>
                       {score >= rank.score && <CheckCircle className="w-4 h-4 text-green-500" />}
@@ -310,7 +310,7 @@ const Student = () => {
               <Card>
                 <CardHeader className="p-4 sm:p-6">
                   <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                    <Play className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                     Iniciar Quiz
                   </CardTitle>
                   <CardDescription className="text-sm">
@@ -371,7 +371,7 @@ const Student = () => {
 
                   <Button 
                     onClick={startQuiz}
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    className="w-full"
                     size="lg"
                     disabled={questions.length === 0}
                   >
@@ -379,7 +379,7 @@ const Student = () => {
                     {questions.length === 0 ? 'Nenhuma Pergunta Carregada' : 'Começar Quiz'}
                   </Button>
 
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     <p>• Cada pergunta tem 20 segundos para ser respondida</p>
                     <p>• Ganhe 1 ponto por resposta correta</p>
                     <p>• Avance nas graduações da capoeira conforme sua pontuação</p>
@@ -397,7 +397,7 @@ const Student = () => {
                            {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
                            {isPaused ? "Continuar" : "Pausar"}
                          </Button>
-                         <Button variant="outline" size="sm" onClick={resetQuiz} className="flex items-center gap-1 text-red-600 hover:text-red-700">
+                         <Button variant="outline" size="sm" onClick={resetQuiz} className="flex items-center gap-1 text-destructive hover:text-destructive">
                            <RotateCcw className="w-3 h-3" />
                            Resetar
                          </Button>
@@ -446,18 +446,18 @@ const Student = () => {
               </CardHeader>
               <CardContent>
                 {relations.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/60" />
                     <p className="text-lg font-medium mb-2">Nenhum professor vinculado</p>
                     <p>Vincule-se a professores para iniciar conversas</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {relations.map((relation) => (
-                      <div key={relation.teacherId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={relation.teacherId} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                         <div className="flex-1">
                           <h4 className="font-medium">{relation.teacherName}</h4>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             Professor vinculado desde {new Date(relation.createdAt).toLocaleDateString('pt-BR')}
                           </p>
                         </div>
@@ -472,7 +472,6 @@ const Student = () => {
                             });
                             setIsChatOpen(true);
                           }}
-                          className="bg-purple-600 hover:bg-purple-700"
                         >
                           <MessageCircle className="w-4 h-4 mr-2" />
                           Iniciar Chat
@@ -507,8 +506,8 @@ const QuizQuestionView = ({ question, onAnswer }: { question: Question, onAnswer
 
     return (
         <div className="space-y-4">
-            <div className="p-4 bg-purple-50 rounded-lg">
-                <p className="text-sm text-purple-600 font-medium mb-1">
+            <div className="p-4 bg-primary/10 rounded-lg">
+                <p className="text-sm text-primary font-medium mb-1">
                 {question.theme.toUpperCase()}
                 </p>
                 <h3 className="text-lg font-semibold">
@@ -520,7 +519,7 @@ const QuizQuestionView = ({ question, onAnswer }: { question: Question, onAnswer
                 <Button
                     key={index}
                     variant={selectedOption === index ? "default" : "outline"}
-                    className={`w-full text-left p-4 h-auto justify-start ${selectedOption === index ? "bg-purple-600 hover:bg-purple-700" : "hover:bg-purple-50"}`}
+                    className={`w-full text-left p-4 h-auto justify-start ${selectedOption === index ? "" : "hover:bg-primary/10"}`}
                     onClick={() => setSelectedOption(index)}
                 >
                     <span className="font-semibold mr-2">{String.fromCharCode(65 + index)})</span>
@@ -553,7 +552,7 @@ const QuizFeedbackView = ({ question, selectedAnswer, onNext, isLastQuestion }: 
                 {isCorrect ? (question.feedback.text || "Boa resposta!") : `A resposta correta era: "${question.options[question.correctOptionIndex]}". ${question.feedback.text || ""}`}
                 </p>
             </div>
-            <Button onClick={onNext} className="w-full bg-purple-600 hover:bg-purple-700">
+            <Button onClick={onNext} className="w-full">
                 {isLastQuestion ? "Finalizar Quiz" : "Próxima Pergunta"}
             </Button>
             <QuestionComments
