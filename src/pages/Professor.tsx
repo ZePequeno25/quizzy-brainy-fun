@@ -245,7 +245,7 @@ const Professor = () => {
 
   if (loading && !user) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <Header />
         <div className="container mx-auto py-8 px-4 text-center">Carregando...</div>
       </div>
@@ -254,23 +254,23 @@ const Professor = () => {
   
   if (!user) {
       return(
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
             <Header />
-            <div className="container mx-auto py-8 px-4 text-center text-red-600">Acesso negado. Por favor, faça login.</div>
+            <div className="container mx-auto py-8 px-4 text-center text-destructive">Acesso negado. Por favor, faça login.</div>
         </div>
       )
   }
 
   // Renderização do componente
   return (
-    <div className="min-h-screen bg-gray-50 pb-4">
+    <div className="min-h-screen bg-background pb-4">
       <Header />
       <div className="container mx-auto py-4 px-4 max-w-7xl">
         <div className="mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-purple-600 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2">
             Área do Professor
           </h1>
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Bem-vindo, {user.nomeCompleto.split(' ')[0]}! Gerencie seus conteúdos e alunos.
           </p>
         </div>
@@ -353,8 +353,8 @@ const Professor = () => {
                   </Table>
                   
                   {students.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground/60" />
                       <p className="text-lg font-medium mb-2">Nenhum aluno vinculado</p>
                       <p>Compartilhe seu código de vínculo para que os alunos possam se conectar.</p>
                     </div>
@@ -382,15 +382,15 @@ const Professor = () => {
                 <div className="space-y-6">
                   {Object.entries(groupedQuestions).map(([theme, themeQuestions]) => (
                     <div key={theme} className="border rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-purple-600 mb-3 capitalize">
+                      <h3 className="text-lg font-semibold text-primary mb-3 capitalize">
                         {theme} ({themeQuestions.length} perguntas)
                       </h3>
                       <div className="space-y-2">
                          {themeQuestions.map((question) => (
-                          <div key={question.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-gray-50 rounded gap-2">
+                          <div key={question.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-muted rounded gap-2">
                             <div className="flex-1">
                               <p className="font-medium">{question.question}</p>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 Visibilidade: 
                                 <Badge 
                                   variant={question.visibility === 'public' ? 'default' : 'secondary'}
@@ -426,8 +426,8 @@ const Professor = () => {
                   ))}
                   
                   {Object.keys(groupedQuestions).length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                        <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <div className="text-center py-8 text-muted-foreground">
+                        <BarChart3 className="w-12 h-12 mx-auto mb-4 text-muted-foreground/60" />
                         <p className="text-lg font-medium mb-2">Nenhuma questão criada</p>
                         <p>Adicione questões manualmente ou faça upload de um arquivo XML.</p>
                     </div>
@@ -474,22 +474,22 @@ const Professor = () => {
               {loading ? <p>Carregando comentários...</p> : (
                 <>
                 {comments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/60" />
                     <p className="text-lg font-medium mb-2">Nenhum comentário ainda</p>
                     <p>Os comentários dos seus alunos aparecerão aqui.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {comments.map((comment) => (
-                      <div key={comment.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div key={comment.id} className="border rounded-lg p-4 bg-muted">
                          <div className="flex items-start justify-between mb-3">
                            <div>
-                             <h4 className="font-medium text-purple-600">{comment.questionTheme || 'Tema Desconhecido'}</h4>
-                             <p className="text-sm text-gray-600 mb-2">Questão: "{comment.questionText || 'Não especificada'}"</p>
+                             <h4 className="font-medium text-primary">{comment.questionTheme || 'Tema Desconhecido'}</h4>
+                             <p className="text-sm text-muted-foreground mb-2">Questão: "{comment.questionText || 'Não especificada'}"</p>
                              <div className="flex items-center gap-2">
                                <Badge variant="secondary">{comment.userName || 'Usuário Desconhecido'}</Badge>
-                               <span className="text-xs text-gray-500">
+                               <span className="text-xs text-muted-foreground">
                                 {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                               </span>
                             </div>
@@ -497,7 +497,6 @@ const Professor = () => {
                           <Button
                             variant="default"
                             size="sm"
-                            className="bg-purple-600 hover:bg-purple-700"
                             onClick={() => {
                                setChattingWith({
                                 id: comment.userId,
@@ -511,7 +510,7 @@ const Professor = () => {
                             Responder
                           </Button>
                         </div>
-                        <p className="text-gray-800 bg-white p-3 rounded-md shadow-sm">{comment.message}</p>
+                        <p className="bg-background p-3 rounded-md shadow-sm">{comment.message}</p>
                       </div>
                     ))}
                   </div>
